@@ -1,3 +1,11 @@
+export const assessmentPolicy = Object.freeze({
+  passMark: 75,
+  initialPriceCents: 2500,
+  additionalPriceCents: 2000,
+  currency: 'USD',
+  waitDays: 28,
+});
+
 export const courseLabels = Object.freeze({
   network: 'Network Fundamentals (legacy assessment)',
   devices: 'Network Fundamentals',

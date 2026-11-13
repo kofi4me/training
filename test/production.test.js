@@ -17,6 +17,17 @@ test('production fails closed and proxy headers cannot bypass per-client throttl
   assert.equal(allow('b', 1), true); assert.equal(allow('c', 1), false); time = 60001; assert.equal(allow('c', 1), true);
 });
 
+test('the website training route can serve practice while learner sign-in is unconfigured', () => {
+  const env = {
+    NODE_ENV: 'production', NETWORK_LAB_PUBLIC_ORIGIN: 'https://www.example.test',
+    NETWORK_LAB_HTTPS: '1', NETWORK_LAB_DATA_DIR: '/data',
+    NETWORK_LAB_BASE_PATH: '/training', NETWORK_LAB_ALLOW_ANONYMOUS_PRACTICE: '1',
+  };
+  assert.equal(deploymentConfig(env).basePath, '/training');
+  assert.throws(() => deploymentConfig({ ...env, NETWORK_LAB_BASE_PATH: '/training/' }), /trailing slash/);
+  assert.throws(() => deploymentConfig({ ...env, OIDC_CLIENT_ID: 'partial' }), /identity provider/);
+});
+
 test('server restricts files and methods, emits security headers, and rate limits requests', async () => {
   process.env.NETWORK_LAB_DATA_DIR = await mkdtemp(path.join(tmpdir(), 'kn-http-'));
   const server = createLabServer({ production: false, origin: '', proxy: '' });

@@ -24,16 +24,40 @@ const repairs = [
 (async () => {
   process.env.NETWORK_LAB_DATA_DIR = await fs.mkdtemp(path.join(os.tmpdir(), 'kn-applied-labs-'));
   const { createLabServer } = await import('../server.js');
-  const server = createLabServer({ production:false, origin:'', proxy:'' });
+  const server = createLabServer({ production:false, origin:'', proxy:'', basePath:'/training' });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-  const base = 'http://127.0.0.1:' + server.address().port;
+  const base = 'http://127.0.0.1:' + server.address().port + '/training';
   const browser = await chromium.launch({ channel:'chrome', headless:true });
   try {
     const page = await browser.newPage({ viewport:{width:390,height:844}, reducedMotion:'reduce' });
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     page.setDefaultTimeout(15000);
-    await page.goto(base);
-    assert.equal(await page.locator('[aria-labelledby="training-courses"] .course-launch').count(), 13);
+    await page.goto(base + '/');
+    const categories = page.getByRole('navigation', { name:'Training areas' });
+    const areas = [
+      { button:'Explore Cybersecurity Courses', title:'Cybersecurity', id:'cybersecurity', file:'cybersecurity-courses.html', count:3 },
+      { button:'Explore Linux Courses', title:'Linux Systems Administration', id:'systems-administration', file:'linux-courses.html', count:3 },
+      { button:'Explore Networking Courses', title:'Computer Networking', id:'networks', file:'networking-courses.html', count:10 },
+    ];
+    assert.equal(await categories.getByRole('link').count(), areas.length);
+    assert.equal(await page.locator('.course-list').count(), 0);
+    for (const { button, title, id, file, count } of areas) {
+      await page.goto(base + '/courses.html#' + id);
+      await page.waitForURL(base + '/' + file);
+      await page.getByRole('link', { name:'Homepage', exact:true }).click();
+      await categories.getByRole('link', { name:button, exact:true }).focus();
+      await page.keyboard.press('Enter');
+      await page.waitForURL(base + '/' + file);
+      const section = page.locator('#' + id);
+      assert.equal(await section.getByRole('heading', { name:title, exact:true, level:1 }).count(), 1);
+      assert.equal(await section.locator('.course-launch').count(), count);
+      assert.equal(await section.locator('a[href^="assessment.html?course="]').count(), count);
+    }
+    for (const width of [390, 1360]) {
+      await page.setViewportSize({width, height:844});
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    }
+    await page.setViewportSize({width:390, height:844});
     const track = page.locator('.course-list article').filter({ has:page.getByRole('heading', { name:'Switching & Routing', exact:true }) });
     assert.equal(await track.locator('.course-launch').count(), 2);
     assert.equal(await track.getByRole('link', { name:'Start Switching' }).getAttribute('href'), 'fundamentals.html?course=switching');
@@ -89,7 +113,7 @@ const repairs = [
     await mask.locator('[name="mask"]').fill('255.255.255.224');
     assert.match(await (await finish(mask)).innerText(), /CIDR prefix \/27/);
     assert.deepEqual(errors, []);
-    console.log('Applied lab browser checks passed: all 13 module pages, 15 lab placements, 14 fault/repair flows, mask validation, keyboard replay, baseline comparison, responsive layouts and track links.');
+    console.log('Catalog category buttons, 16 course and assessment links, and 14 networking/security fault and repair flows passed.');
   } finally {
     await browser.close();
     server.closeAllConnections();

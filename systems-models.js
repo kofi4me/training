@@ -1,4 +1,4 @@
-const event = (node, message) => ({ node, message });
+const event = (node, message, command, output) => ({ node, message, ...(command ? { command, output } : {}) });
 const check = (label, ok, detail) => ({ label, ok: Boolean(ok), detail });
 const result = (events, checks, facts = []) => ({ events, checks, facts });
 const invalid = (label, detail) => result([event(0, detail)], [check(label, false, detail)]);
@@ -20,10 +20,12 @@ export function linuxAccounts(c) {
   const guestDenied = bits('guest') === 0;
   const inherited = writes(c.operator) && c.ownerGroup === 'team' && has(mode, 0o2000);
   return result([
-    event(0, `groupadd ${c.group}: created shared group (GID 2000).`),
-    event(0, `useradd -m -U ${c.operator} and useradd -m -U ${c.analyst}: created UIDs 2001 and 2002 with separate primary groups and home directories.`),
-    event(0, assigned.length ? `Recorded supplementary membership in ${c.group}: ${assigned.join(', ')}.` : 'No supplementary memberships were assigned.'),
-    event(1, `/srv/support is owned by root:${c.ownerGroup === 'team' ? c.group : 'root'} with mode ${c.mode}.`),
+    event(0, `Created shared group ${c.group} (GID 2000).`, 'sudo groupadd -- ' + c.group, ''),
+    event(0, `Created ${c.operator} with a private primary group and home directory.`, 'sudo useradd -m -U -- ' + c.operator, ''),
+    event(0, `Created ${c.analyst} with a separate private primary group and home directory.`, 'sudo useradd -m -U -- ' + c.analyst, ''),
+    event(0, 'Read the created account record.', 'getent passwd ' + c.operator, c.operator + ':x:2001:2001::/home/' + c.operator + ':/bin/sh'),
+    event(0, 'Check the recorded supplementary group members.', 'getent group ' + c.group, c.group + ':x:2000:' + assigned.join(',')),
+    event(1, 'Inspect the shared directory owner, group, and mode.', 'stat -c "%U %G %a" /srv/support', 'root ' + (c.ownerGroup === 'team' ? c.group : 'root') + ' ' + mode.toString(8)),
     event(2, c.fresh ? 'Fresh sessions loaded the current group memberships.' : 'Existing sessions still carry the group IDs from before the membership change.'),
     event(2, `${c.operator}: ${writes(c.operator) ? 'can create a file' : 'cannot create a file'}; ${c.analyst}: ${writes(c.analyst) ? 'can create a file' : 'cannot create a file'}.`),
     event(2, `guest: ${guestDenied ? 'no directory permissions' : 'has directory permission bits'}. ${inherited ? 'A new file inherits the shared group.' : 'Shared group inheritance was not demonstrated.'}`)
@@ -44,8 +46,8 @@ export function linuxPermissions(c) {
   const canReplace = has(parent >> 3, 3) && !has(parent, 0o1000);
   return result([
     event(0, 'The analyst belongs to reports. The guest matches neither the owner nor the group.'),
-    event(1, `The analyst ${staffSearch ? 'can' : 'cannot'} traverse /srv/reports; the guest ${guestSearch ? 'can' : 'cannot'} traverse it.`),
-    event(2, `Known file: analyst read ${read ? 'allowed' : 'denied'}, write ${write ? 'allowed' : 'denied'}, directory replacement ${canReplace ? 'allowed' : 'denied'}.`)
+    event(1, `The analyst ${staffSearch ? 'can' : 'cannot'} traverse /srv/reports. The guest ${guestSearch ? 'can' : 'cannot'} traverse it.`, 'stat -c "%U %G %a" /srv/reports', 'root reports ' + parent.toString(8)),
+    event(2, `Analyst write ${write ? 'allowed' : 'denied'}. Directory replacement ${canReplace ? 'allowed' : 'denied'}.`, 'sudo -u analyst -- test -r /srv/reports/weekly.txt; echo "$?"', read ? '0' : '1')
   ], [check('Analyst reads the file', read, 'The parent must grant group search and the file must grant group read.'),
     check('Analyst cannot alter the report', !write && !canReplace, 'Protect both the file contents and its directory entry.'),
     check('Guest cannot traverse', !guestSearch, 'Remove search permission from the directory other class.')],
@@ -61,9 +63,9 @@ export function linuxService(c) {
     event(0, c.configReadable ? 'portal can read /etc/portal/config.ini.' : 'portal cannot read /etc/portal/config.ini (EACCES).'),
     event(1, `The socket on ${c.port} is ${canBind ? 'available' : 'occupied by the legacy listener'}.`),
     event(1, !c.start ? 'No start requested.' : active ? 'portal.service entered active state.' : `Start failed: ${!c.configReadable ? 'config access denied' : 'address already in use'}.`),
-    event(2, `HTTP application probe on ${c.clientPort}: ${probe ? '200, Portal ready' : 'no valid Portal response'}.`),
+    event(2, `Probe the Portal endpoint on ${c.clientPort}.`, 'curl -fsS --max-time 3 http://127.0.0.1:' + c.clientPort + '/health', probe ? 'Portal ready' : 'No valid Portal response'),
     event(1, `Simulated reboot: ${c.enabled ? 'unit is enabled at boot' : 'unit is not enabled'}.`),
-    event(2, `Post-reboot application probe: ${reboot ? '200, Portal ready' : 'no valid Portal response'}.`)
+    event(2, 'Repeat the application probe after a simulated reboot.', 'curl -fsS --max-time 3 http://127.0.0.1:' + c.clientPort + '/health', reboot ? 'Portal ready' : 'No valid Portal response')
   ], [check('Service responds now', probe, 'Fix configuration access and binding; the client must target the service port.'),
     check('Service responds after reboot', reboot, 'Enabling and starting the unit are separate operations.'),
     check('Legacy listener preserved', c.portOccupied, 'Migrate Portal without removing the other service on port 8080.')],

@@ -10,10 +10,11 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 root = Path(__file__).parent
 record = json.load(sys.stdin)
+course_title = record.get('courseTitle', 'Network Fundamentals')
 pdfmetrics.registerFont(TTFont('Learner', str(root / 'assets' / 'fonts' / 'Vera.ttf')))
 output = io.BytesIO()
 c = canvas.Canvas(output, pagesize=(842, 595), pageCompression=1)
-c.setTitle('KryptNet Professional Certificate - Network Fundamentals')
+c.setTitle(f'KryptNet Professional Certificate - {course_title}')
 c.setAuthor('KryptNet LLC')
 navy = (.03, .03, .53)
 gold = (.71, .60, .33)
@@ -58,8 +59,14 @@ while pdfmetrics.stringWidth(record['name'], 'Learner', size) > 690 and size > 8
     size -= 1
 text(record['name'], 325, size, 'Learner', (.59, .03, .03))
 text('has successfully completed the course assessment in', 272, 11, color=muted)
-text('Network Fundamentals', 240, 23, 'Times-Bold')
-text('IPv4 Addressing, VLANs, and Packet Forwarding', 218, 11, color=muted)
+course_size = 23
+while pdfmetrics.stringWidth(course_title, 'Times-Bold', course_size) > 700 and course_size > 12:
+    course_size -= 1
+text(course_title, 240, course_size, 'Times-Bold')
+course_scope = ('Knowledge and verified simulated practical assessment'
+                if record.get('assessmentType') == 'guided-and-practical'
+                else 'IPv4 Addressing, VLANs, and Packet Forwarding')
+text(course_scope, 218, 11, color=muted)
 c.setStrokeColorRGB(.84, .87, .88)
 c.line(65, 189, 777, 189)
 

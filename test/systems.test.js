@@ -2,9 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { courseForLocation, courseLabels } from '../course-catalog.js';
 import { systemsLabs } from '../systems-labs.js';
+import { linuxCourseLabs } from '../linux-course-labs.js';
+import { linuxFinalProject, linuxModules, linuxProjectRubric } from '../linux-course-content.js';
 import repairs from './systems-repairs.cjs';
 
-const cases = Object.entries(systemsLabs).flatMap(([course, labs]) => labs.map(lab => {
+const courses = { ...systemsLabs, linux: [...systemsLabs.linux, ...linuxCourseLabs] };
+const cases = Object.entries(courses).flatMap(([course, labs]) => labs.map(lab => {
   const start = Object.fromEntries(lab.fields.map(field => [field.key, field.value]));
   return [lab, start, { ...start, ...repairs[course][lab.id] }];
 }));
@@ -39,6 +42,46 @@ test('read-only file does not protect its name in a writable parent, and service
   assert.deepEqual(run('linux-service', { enabled:false }).checks.map(c => c.ok), [true,false,true]);
   assert.deepEqual(run('linux-service', { start:false }).checks.map(c => c.ok), [false,true,true]);
   assert.equal(run('linux-service', { clientPort:'8080' }).checks[0].ok, false);
+});
+
+test('all five Linux modules have projects and each walkthrough demonstrates failure and recovery', () => {
+  assert.deepEqual(linuxModules.map(module => module.lessons.length), [4, 4, 4, 4, 3]);
+  assert.deepEqual([...linuxModules, linuxFinalProject].flatMap(module => module.labs).sort(), courses.linux.map(lab => lab.id).sort());
+  assert.equal(linuxProjectRubric.reduce((total, [, points]) => total + points, 0), 100);
+  for (const { lessons } of linuxModules) {
+    for (const { frames } of lessons) {
+      assert.ok(frames.some((frame, index) => frame.failed && frames.slice(index + 1).some(step => !step.failed)));
+      assert.ok(frames.every(frame => frame.command && frame.note && typeof frame.output === 'string'));
+    }
+  }
+});
+
+test('Linux installation, process, and archive checks reject unsafe and incomplete outcomes', () => {
+  assert.equal(run('linux-installation', { disk:'data' }).checks[0].ok, false);
+  assert.deepEqual(run('linux-installation', { network:'disconnected' }).checks.map(item => item.ok), [true,false,true]);
+  assert.equal(run('linux-package-service', { pid:'neighbor' }).events.some(frame => frame.command.startsWith('kill ')), false);
+  assert.deepEqual(run('linux-package-service', { start:false }).checks.map(item => item.ok), [true,true,false,true]);
+  for (const override of [{ label:'SYSTEM' }, { archive:'damaged' }, { verify:false }, { source:'logs' }, { target:'source' }, { compare:false }]) {
+    const result = run('linux-backup-restore', override);
+    assert.equal(result.checks.at(-1).ok, false);
+    assert.deepEqual(result.facts[0], ['Source files', 'Preserved']);
+  }
+  assert.deepEqual(run('linux-health-repair', { cleanup:'delete' }).checks.map(item => item.ok), [true,false,false]);
+  assert.deepEqual(run('linux-health-repair', { probes:'web' }).checks.map(item => item.ok), [true,true,false]);
+});
+
+test('both handover incidents require their own evidence and enforce critical checks at high scores', () => {
+  const permissions = { fault:'permissions', evidence:'path', repair:'access', rollback:'permissions' };
+  const pass = run('linux-server-handover', permissions);
+  assert.equal(pass.passed, true);
+  assert.equal(pass.facts[0][1], '100%');
+  assert.match(pass.events.find(frame => frame.command.startsWith('namei')).output, /root/);
+  assert.equal(run('linux-server-handover', { fault:'permissions' }).passed, false);
+  const unsafe = run('linux-server-handover', { team:'2777' });
+  assert.equal(unsafe.facts[0][1], '80%');
+  assert.equal(unsafe.passed, false);
+  assert.equal(run('linux-server-handover', { baseline:'none' }).passed, true);
+  assert.equal(run('linux-server-handover', { evidence:'uptime', rollback:'none' }).passed, false);
 });
 
 test('automation checks input errors, dry run, and concurrency as separate conditions', () => {

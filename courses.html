@@ -6,6 +6,7 @@
   <title>KryptNet Training Labs</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="fundamentals.css">
+  <script src="training-home.js" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -13,83 +14,81 @@
     <nav class="assessment-nav" aria-label="Training links"><a href="courses.html" aria-current="page">Homepage</a><a href="account.html">My learning</a></nav>
   </header>
   <main class="course-catalog">
-    <h1>KryptNet Training Labs</h1>
-    <p class="assessment-disclosure">Guided simulation courses. The mandatory practical-assessment and comprehensive release standard is being implemented; these course listings are not production-release approvals.</p>
-    <p>Learn networking, cybersecurity, and systems administration through browser-based exercises. Study a concept, make a prediction, run an experiment, and explain what changed.</p>
-    <section aria-labelledby="training-courses">
-      <h2 id="training-courses">Choose a course</h2>
-      <div class="course-list">
-        <article>
-          <span class="eyebrow">01 / NETWORKING</span>
-          <h3>Network Fundamentals</h3>
-          <p>Identify network devices, trace local and remote delivery, and diagnose a disconnected link.</p>
-          <a class="guide-link course-launch" href="fundamentals.html">Start Network Fundamentals</a>
-          <a class="guide-link" href="index.html">Advanced topology workshop</a>
-        </article>
-        <article>
-          <span class="eyebrow">02 / NETWORKING</span>
-          <h3>Network Communication</h3>
-          <p>Follow a web request through the seven OSI layers and distinguish local Ethernet delivery from IP routing.</p>
-          <a class="guide-link course-launch" href="fundamentals.html?course=communications">Start Network Communication</a>
-        </article>
-        <article>
-          <span class="eyebrow">03 / NETWORKING</span>
-          <h3>IP Addressing</h3>
-          <p>Calculate IPv4 subnets and IPv6 prefixes bit by bit, then allocate address blocks and check your work.</p>
-          <a class="guide-link course-launch" href="fundamentals.html?course=addressing">Start IP Addressing</a>
-        </article>
-        <article>
-          <span class="eyebrow">04 / NETWORKING</span>
-          <h3>VLANs</h3>
-          <p>Trace access and trunk traffic. Diagnose a failed VLAN path and restore delivery without removing segmentation.</p>
-          <a class="guide-link course-launch" href="fundamentals.html?course=vlans">Start VLANs</a>
-        </article>
-        <article>
-          <span class="eyebrow">05 / NETWORKING</span>
-          <h3>Switching &amp; Routing</h3>
-          <p>Start with MAC learning and VLAN boundaries. Then work through longest-prefix matching, TTL, next-hop failures, and a shared forwarding repair lab.</p>
-          <div class="track-actions"><a class="guide-link course-launch" href="fundamentals.html?course=switching">Start Switching</a>
-          <a class="guide-link course-launch" href="fundamentals.html?course=routing">Start Routing</a></div>
-        </article>
-        <article>
-          <span class="eyebrow">06 / SECURITY INVESTIGATION</span>
-          <h3>Man-in-the-Middle (MiTM)</h3>
-          <p>Trace an ARP spoofing scenario, compare HTTP and HTTPS exposure, and verify a defense with a fresh probe.</p>
-          <a class="guide-link course-launch" href="security.html?lab=mitm">Start MiTM training</a>
-        </article>
-        <article>
-          <span class="eyebrow">07 / SECURITY INVESTIGATION</span>
-          <h3>DoS and DDoS</h3>
-          <p>Compare single-source and distributed overload. Observe queues and dropped requests, then test rate limiting and recovery.</p>
-          <a class="guide-link course-launch" href="security.html?lab=ddos">Start DoS and DDoS training</a>
-        </article>
-        <article><h3>DHCP Operations</h3><p>Observe DORA, allocate leases, exhaust an address pool, and diagnose relay, renewal, and gateway failures.</p><a class="guide-link course-launch" href="fundamentals.html?course=dhcp">Start DHCP Operations</a></article>
-        <article><h3>DNS Operations</h3><p>Trace name resolution, inspect cache lifetimes, and distinguish negative answers, resolver timeouts, and authoritative failures.</p><a class="guide-link course-launch" href="fundamentals.html?course=dns">Start DNS Operations</a></article>
-        <article><h3>Network Firewalls and ACLs</h3><p>Inspect ordered stateless rules, test packet fields, and repair shadowed permits and denials.</p><a class="guide-link course-launch" href="fundamentals.html?course=firewall">Start Firewalls and ACLs</a></article>
-        <article><h3>NAT/PAT</h3><p>Inspect outbound and return tuples, allocate public ports, and investigate mapping expiry and exhaustion.</p><a class="guide-link course-launch" href="fundamentals.html?course=nat">Start NAT/PAT</a></article>
-        <article><h3>Network Monitoring and Troubleshooting</h3><p>Capture a synthetic baseline, compare loss and RTT variation, and distinguish name-resolution failures from network symptoms.</p><a class="guide-link course-launch" href="fundamentals.html?course=monitoring">Start Monitoring and Troubleshooting</a></article>
-      </div>
-    </section>
-    <section id="systems-administration" aria-labelledby="systems-courses">
-      <h2 id="systems-courses">Systems Administration</h2>
-      <div class="course-list">
-        <article><h3>Linux Server Administration</h3><p>Create user and group accounts, configure shared access, and restore a Linux service without breaking a neighboring application.</p><a class="guide-link course-launch" href="systems.html?course=linux">Start Linux Server Administration</a></article>
-        <article><h3>Automation and Scripting</h3><p>Work with Bash and Python examples, validate log data, design a repeatable configuration change, and protect overlapping jobs.</p><a class="guide-link course-launch" href="systems.html?course=automation">Start Automation and Scripting</a></article>
-        <article><h3>Backup, Restore &amp; Recovery</h3><p>Plan recovery objectives, restore a damaged incremental chain, and validate a recovered service before cutover.</p><a class="guide-link course-launch" href="systems.html?course=recovery">Start Backup, Restore &amp; Recovery</a></article>
-      </div>
-    </section>
-    <section class="assessment-disclosure" aria-labelledby="training-assessment">
-      <h2 id="training-assessment">Practice and assessment</h2>
-      <p>No account is needed for practice. The security labs use simulations and do not send attack traffic. Network Fundamentals has a separate graded assessment and certificate; quiz registration requires a learner account.</p>
-      <a class="guide-link" href="assessment.html">Network Fundamentals assessment</a>
-    </section>
-    <details class="planned-courses"><summary>Planned courses — future development</summary>
-      <p>These courses are retained in the roadmap, not available laboratories. We will develop and review them individually.</p>
-      <p>DHCP, DNS, Firewalls/ACLs, NAT/PAT, and Monitoring now have course buttons above. The remaining proposals below are reserved for later development.</p>
-      <h3>Further networking and infrastructure</h3><ul><li>Wireless Networking and Wi-Fi Security</li><li>VPNs and Secure Tunneling</li><li>Software-Defined Networking</li><li>IPv6 Security and Neighbor Discovery</li></ul>
-      <h3>Security and investigation</h3><ul><li>Phishing and Social Engineering</li><li>Password Attacks and Authentication Security</li><li>Ransomware and Malware Incident Response</li><li>Web Application Security</li><li>SOC Fundamentals</li><li>Digital Forensics Fundamentals</li><li>Zero Trust Network Security</li><li>Cloud Security and Identity Management</li></ul>
-      <h3>Cloud and emerging technology</h3><ul><li>AI-Assisted Cyberattacks and Defense</li><li>AI Agent Security and Prompt Injection</li><li>Cloud Networking and Microsegmentation</li><li>Container and Kubernetes Security</li><li>API Security and OAuth Authentication</li><li>SASE and ZTNA</li></ul>
-    </details>
+    <div class="training-home">
+      <section class="training-welcome" aria-labelledby="training-title">
+        <h1 id="training-title">Welcome to KryptNet Training Labs</h1>
+        <p class="training-tagline">Learn. Practice. Build Real-World IT Skills.</p>
+        <p>Develop practical, industry-relevant skills in cybersecurity, computer networking, and Linux systems administration through interactive lessons, guided tutorials, and hands-on virtual labs. Practice technical configurations, investigate realistic scenarios, and solve problems using simulated IT environments.</p>
+        <p><strong>All courses and practical labs are free, self-paced, and accessible online.</strong> Learn at your convenience and build the technical confidence needed for real-world IT environments.</p>
+      </section>
+
+      <section id="training-courses" class="training-section" aria-labelledby="training-areas">
+        <h2 id="training-areas">Explore Our Training Courses</h2>
+        <nav class="training-areas" aria-label="Training areas">
+          <a id="cybersecurity" class="training-button" href="cybersecurity-courses.html">Explore Cybersecurity Courses</a>
+          <a id="networks" class="training-button" href="networking-courses.html">Explore Networking Courses</a>
+          <a id="systems-administration" class="training-button" href="linux-courses.html">Explore Linux Courses</a>
+        </nav>
+      </section>
+
+      <section class="training-section" aria-labelledby="training-steps">
+        <h2 id="training-steps">How It Works</h2>
+        <ol class="training-steps">
+          <li>
+            <h3>Choose Your Course</h3>
+            <p>Browse our training categories and select a course that matches your interests, experience, or professional development goals.</p>
+          </li>
+          <li>
+            <h3>Learn Through Guided Tutorials</h3>
+            <p>Build your understanding through structured lessons, technical explanations, demonstrations, and practical examples.</p>
+          </li>
+          <li>
+            <h3>Practice in Interactive Labs</h3>
+            <p>Apply your knowledge in realistic virtual environments. Configure systems, troubleshoot problems, investigate incidents, and verify your results through practical lab exercises.</p>
+          </li>
+          <li>
+            <h3>Complete Your Assessment</h3>
+            <p>After completing your training, register or sign in to take the optional online assessment. Review the assessment requirements and pay the applicable fee when ready.</p>
+          </li>
+          <li>
+            <h3>Earn Your Certificate</h3>
+            <p>Successfully complete the assessment and practical requirements to receive your downloadable KryptNet Certificate of Completion.</p>
+          </li>
+        </ol>
+      </section>
+
+      <section id="training-assessment" class="training-section" aria-labelledby="training-certification">
+        <h2 id="training-certification">Certification and Assessment</h2>
+        <p><strong>Training is free. Certification is optional.</strong></p>
+        <p>Our online assessments allow learners to demonstrate their knowledge and practical skills after completing a course.</p>
+        <table class="training-assessment-table">
+          <thead>
+            <tr><th scope="col">Assessment Details</th><th scope="col">Requirements</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">Initial assessment fee</th><td><strong>$25 USD per course</strong></td></tr>
+            <tr><th scope="row">Included attempts</th><td>First attempt plus one retake</td></tr>
+            <tr><th scope="row">Additional retakes</th><td><strong>$20 USD per attempt</strong></td></tr>
+            <tr><th scope="row">Retake waiting period</th><td>Four weeks after the most recent unsuccessful attempt, for additional paid retakes</td></tr>
+            <tr><th scope="row">Minimum passing score</th><td><strong>75% overall</strong></td></tr>
+            <tr><th scope="row">Practical requirements</th><td>All practical checks must be passed</td></tr>
+            <tr><th scope="row">Certificate</th><td>Downloadable PDF upon successful completion</td></tr>
+          </tbody>
+        </table>
+        <p>Certificates are issued for the specific courses successfully completed and assessed.</p>
+      </section>
+
+      <section class="training-start" aria-labelledby="training-start-title">
+        <h2 id="training-start-title">Start Learning Today</h2>
+        <p>Build your technical knowledge, gain hands-on experience, and develop practical skills at your own pace.</p>
+        <p><strong>No course tuition. No fixed schedules. Learn and practice for free.</strong></p>
+        <div class="training-actions">
+          <a class="training-button" href="#training-courses">Browse Free Courses</a>
+          <a class="training-button training-button-outline" href="#training-assessment">Explore Certification</a>
+        </div>
+      </section>
+    </div>
+
     <footer><a href="pilot.html">Facilitator pilot</a><a href="privacy.html">Learner data and privacy</a></footer>
   </main>
 </body>

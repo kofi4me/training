@@ -41,6 +41,6 @@ Keep one application process. Account locks do not make the assessment workflow,
 
 ## Website navigation and sign-in
 
-Add a Training Labs link on the existing website only after choosing and deploying the actual training origin. The application currently expects a hostname root, not an arbitrary path prefix. `https://training.kryptnet.org/` is a possible hostname, not an already configured address. `https://preview.kryptnet.org/` remains the existing website; this work does not replace it.
+The website's Training button opens `https://www.kryptnet.org/training/`. The training app uses `NETWORK_LAB_BASE_PATH=/training` for this deployment. See [the website deployment instructions](deploy/KRYPTNET-STAGING.md) for the existing Nginx HTTPS server and callback URLs.
 
 Sharing PostgreSQL is not shared sign-in. The current lab authenticates through OpenID Connect with verified email and keys identities by issuer plus subject. Confirm the website's authentication provider before reusing it or designing a server-side identity bridge. Do not copy password hashes, trust browser-supplied user IDs/roles, or merge accounts by email. Keep the existing identity configuration until a reviewed integration and explicit account-linking plan exist.

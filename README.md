@@ -18,9 +18,15 @@ Learn mode displays usable ranges and broadcasts. Practice hides these calculati
 
 Configurations are stored in browser localStorage and can be exported/imported as JSON. Version 2 adds movable devices, variable host/switch counts, and access-cable state; original version 1 files still import. Data stays in the browser. This is a learning tool, not a secure examination system: calculations and challenge answers are available in source.
 
-## Interactive tools
+## Systems Administration
 
-The catalogue also contains a Systems Administration track: Linux Server Administration (including user and group account creation), Automation and Scripting, and Backup, Restore & Recovery. Each course has three tutorials paired with browser labs that replay model output and verify outcomes. The recovery capstone connects Linux service setup, repeatable configuration, and restore validation. The labs do not run commands or issue credentials. Linux and scripting tutorials include optional worked examples for disposable environments.
+The [Linux course catalog](linux-courses.html) includes Linux Server
+Administration, Automation and Scripting, and Backup, Restore & Recovery.
+The three courses provide nine guided browser labs with simulated repairs,
+replay, and outcome checks. Each course has a separate server-graded practical
+assessment and certificate under the portal's shared assessment policy.
+
+## Interactive tools
 
 ## Learning-readiness corrections and pilot status
 
@@ -38,7 +44,7 @@ The facilitator workflow is `pilot.html`; the protocol and release criteria are 
 
 Open `courses.html` or use the Training laboratory selector in the network lab. `security.html?lab=mitm` provides a synthetic gateway-ARP mapping investigation, HTTP versus authenticated-HTTPS visibility, intermediary forwarding, content modification, and a simplified pinned-binding defense. `security.html?lab=ddos` provides a bounded fluid workload model with 20 legitimate clients, configurable attack-source count and rate, link capacity, application capacity, a 200-request buffer, and a per-source admission limiter. It displays legitimate processed/lost volumes, queued work, a timeline, and per-step evidence. Neither lab generates network traffic or provides real interception or attack tooling. Reports export browser-local synthetic evidence as JSON. Each lab's settings persist independently; DDoS time-series evidence is not persisted across reloads.
 
-Both labs include guided experiments, interpretation boundaries, and primary references. These are instructional simulations, not packet emulators or real performance measurements. New security-course quizzes and certificates are not yet implemented; only Network Fundamentals issues certificates. DNS Security and Segmentation remain explicitly marked as planned. Include `courses.html`, `security.html`, `security.js`, and `security-core.js` with static assets if publishing the simulations separately; the protected assessment still requires the backend.
+Both labs include guided experiments, interpretation boundaries, and primary references. They model synthetic traffic for instruction. Each security course has its own server-graded assessment and completion certificate. Include `courses.html`, the three category pages, `training-home.js`, and the lab pages and scripts with static assets if publishing practice separately. Assessments require the backend.
 
 Security experiments now include scenario presets and motion controls. MiTM offers a frame replay with pause/play, hop stepping, replay speed, and clickable device roles. DoS/DDoS includes an admission-flow scene with upstream link, rate limiter, queue occupancy, and application capacity; moving particles illustrate traffic categories rather than literal request counts. The numerical model, not particle positions, determines outcomes. Reduced-motion preferences disable automatic movement; manual hop stepping remains available. Per-step exports retain workload settings to support comparisons across presets. Include `security-motion.js` in static deployments.
 
@@ -78,7 +84,9 @@ Assessments now require the Node backend. GitHub Pages alone can still serve the
 
 Before the quiz, a learner confirms full name and email, with optional organization and learner ID. The server locks these details to a seven-day HttpOnly, SameSite=Strict session; retakes cannot change them. Registration is self-declared: deleting a cookie permits a separate registration, and email ownership is not verified. A deployed service needs account authentication if records must be tied to a persistent real identity. Corrections require issuer assistance; no learner profile-edit endpoint exists.
 
-The server selects questions, saves answers, computes the 80% pass threshold, and records certificate details. It ignores client scores by rejecting unexpected fields. The answer bank and server files are not served as static assets. Persisted sessions, learner details, issued PDF files, and SHA-256 fingerprints live in the ignored .assessment-data directory. Protect and back up that directory; it contains personal data. Do not publish it or place it in a static hosting folder.
+Each course has its own Authorize.Net enrollment. The $25 USD fee includes the first assessment and one retake. Each further attempt costs $20 USD and is available 28 days after the last unsuccessful submission. Learners verify a guided repair first, then submit knowledge answers, a simulated repair, and an explanation. The server requires at least 75% overall and a pass on every practical check before it issues the course certificate. The legacy quiz also uses a 75% pass mark. See the [staging setup](deploy/KRYPTNET-STAGING.md) for payment configuration and launch checks.
+
+The server keeps assessment answers and grading logic private. Persisted learner records and certificate PDFs belong in protected storage. The default local directory is the ignored `.assessment-data` directory. Keep it outside static hosting and back it up.
 
 Certificate PDFs are generated by Python 3 with ReportLab. Install reportlab in the server Python environment, or set NETWORK_LAB_PYTHON to an interpreter with ReportLab available. The bundled Bitstream Vera font and its license are in assets/fonts/. The issuer is KryptNet LLC and the user-supplied logo is assets/kryptnet-logo.jpg.
 

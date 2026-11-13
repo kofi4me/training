@@ -1,0 +1,68 @@
+name: kryptnet-training-labs
+
+services:
+  app:
+    build: ..
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      NETWORK_LAB_PUBLIC_ORIGIN: https://${KRYPTNET_DOMAIN:?Set the training hostname}
+      NETWORK_LAB_BASE_PATH: /training
+      NETWORK_LAB_HTTPS: '1'
+      NETWORK_LAB_ALLOW_ANONYMOUS_PRACTICE: '1'
+      OIDC_ISSUER: ${OIDC_ISSUER:-}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+      KRYPTNET_ADMIN_IDS: ${KRYPTNET_ADMIN_IDS:-}
+      TRAINING_SMTP_CONFIG: ${TRAINING_SMTP_CONFIG:-}
+      TRAINING_SMTP_HOST: ${TRAINING_SMTP_HOST:-}
+      TRAINING_SMTP_PORT: ${TRAINING_SMTP_PORT:-587}
+      TRAINING_SMTP_SECURITY: ${TRAINING_SMTP_SECURITY:-starttls}
+      TRAINING_SMTP_USER: ${TRAINING_SMTP_USER:-}
+      TRAINING_SMTP_PASSWORD: ${TRAINING_SMTP_PASSWORD:-}
+      TRAINING_SMTP_FROM: ${TRAINING_SMTP_FROM:-}
+      TRAINING_CODE_SECRET: ${TRAINING_CODE_SECRET:-}
+      KRYPTNET_STORAGE: files
+      AUTHORIZE_NET_MODE: ${AUTHORIZE_NET_MODE:-sandbox}
+      AUTHORIZE_NET_API_LOGIN_ID: ${AUTHORIZE_NET_API_LOGIN_ID:-}
+      AUTHORIZE_NET_TRANSACTION_KEY: ${AUTHORIZE_NET_TRANSACTION_KEY:-}
+      AUTHORIZE_NET_SIGNATURE_KEY: ${AUTHORIZE_NET_SIGNATURE_KEY:-}
+    ports:
+      - '127.0.0.1:5317:4317'
+    volumes:
+      - learner_data:/var/lib/kryptnet
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - |
+          const host = new URL(process.env.NETWORK_LAB_PUBLIC_ORIGIN).host;
+          const path = process.env.NETWORK_LAB_BASE_PATH + '/health/ready';
+          const options = { hostname: '127.0.0.1', port: 4317, path, headers: { Host: host } };
+          require('node:http').get(options, response => {
+            response.resume();
+            if (response.statusCode !== 200) {
+              console.error('Training readiness returned HTTP ' + response.statusCode);
+              process.exitCode = 1;
+            }
+          }).on('error', error => {
+            console.error(error.message);
+            process.exitCode = 1;
+          });
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    mem_limit: 512m
+    pids_limit: 64
+    logging:
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+volumes:
+  learner_data:

@@ -1,4 +1,6 @@
-export const course = { id: 'network-fundamentals', title: 'Network Fundamentals', passMark: 80, questionCount: 10, issuer: 'KryptNet LLC', certificateTitle: 'KryptNet Professional Certificate', revision: 1 };
+import { assessmentPolicy } from './course-catalog.js';
+
+export const course = { id: 'network-fundamentals', title: 'Network Fundamentals', passMark: assessmentPolicy.passMark, questionCount: 10, issuer: 'KryptNet LLC', certificateTitle: 'KryptNet Professional Certificate', revision: 1 };
 const choice = (id, topic, prompt, options, answer, explanation) => ({ id, topic, prompt, options, answer, explanation, type: 'choice' });
 const numeric = (id, prompt, answer, explanation) => ({ id, topic: 'subnetting', prompt, answer, explanation, type: 'number' });
 export const bank = [

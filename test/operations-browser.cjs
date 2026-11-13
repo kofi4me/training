@@ -9,7 +9,7 @@ const {chromium}=require(process.argv[2]);const assert=require('node:assert/stri
  const run=async(expected)=>{await page.locator('#operation-prepare').click();for(let i=0;i<20&&await page.locator('#operation-next').isEnabled();i++)await page.locator('#operation-next').click();assert.match(await page.locator('#operation-observed').innerText(),expected);};
  const open=async id=>{await page.goto(base+'fundamentals.html?course='+id);await page.locator('#operations-lab').waitFor();};
  const advance=async()=>page.locator('#operation-advance').click();
- await page.goto(base);assert.equal(await page.locator('[aria-labelledby="training-courses"] .course-launch').count(),13);
+ await page.goto(base);await page.getByRole('link',{name:'Explore Networking Courses',exact:true}).click();assert.equal(await page.locator('#networks .course-launch').count(),10);
  await page.getByRole('link',{name:'Start DHCP Operations',exact:true}).click();await page.locator('#operations-lab').waitFor();
  await choose('prediction','Lease usable');await run(/Lease usable/);assert.match(await page.locator('#operation-feedback').innerText(),/Prediction matches/);
  await choose('client','PC-B');await run(/Lease usable/);await choose('client','PC-C');await run(/No lease/);assert.match(await page.locator('#operation-status').innerText(),/exhausted/);
@@ -30,7 +30,7 @@ const {chromium}=require(process.argv[2]);const assert=require('node:assert/stri
  await choose('scenario','dns');await run(/Name resolution failed/);assert.match(await page.locator('#operation-table').innerText(),/Not measured/);await check('byName',false);await run(/Probe run complete/);
  for(const id of ['dhcp','dns','firewall','nat','monitoring']){await open(id);assert.equal(await page.locator('.training-nav [aria-current="page"]').count(),1);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,id);}
  await page.locator('#operations-lab').screenshot({path:'artifacts/monitoring-course-mobile.png'});
- await page.locator('.training-nav').getByRole('link',{name:'Homepage',exact:true}).click();await page.locator('.planned-courses summary').click();await page.getByText('AI Agent Security and Prompt Injection',{exact:true}).waitFor();
+ await page.locator('.training-nav').getByRole('link',{name:'Homepage',exact:true}).click();await page.getByRole('link',{name:'Explore Cybersecurity Courses',exact:true}).click();await page.locator('.planned-courses summary').click();await page.getByText('AI Agent Security and Prompt Injection',{exact:true}).waitFor();
  await page.goto(base+'security.html?lab=mitm');await page.locator('.training-nav').getByRole('link',{name:'DHCP Operations',exact:true}).waitFor();
  assert.deepEqual(errors,[]);console.log('Five course UI checks passed: stateful experiments, failure/repair cases, playback, evidence, navigation, remaining roadmap and mobile layout.');
 }finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

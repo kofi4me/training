@@ -8,39 +8,59 @@ import { createAssessmentService } from './assessment-service.js';
 import { deploymentConfig, securityHeaders, clientAddress, createRateLimiter } from './server-security.js';
 import { createAccounts } from './accounts.js';
 import { createRecordStore } from './record-store.js';
+import { createPayments } from './payments.js';
 const root = fileURLToPath(new URL('.', import.meta.url));
 const publicFiles = new Set(['index.html', 'style.css', 'app.js', 'core.js', 'calculator.js', 'learning.js', 'lessons.js', 'host-tools.js', 'messages.js', 'guide.html', 'assessment.html', 'assessment-client.js', 'verify.html', 'verify.js', 'courses.html', 'security.html', 'security.js', 'security-core.js', 'security-motion.js', 'security-class.js', 'practical-checks.js', 'pilot.html', 'pilot.js', 'account.html', 'account-client.js', 'account-nav.js', 'privacy.html']);
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' };
 for (const file of ['fundamentals.html', 'fundamentals.css', 'fundamentals.js', 'network-lessons.js', 'ip-teaching.js', 'ip-teaching-core.js', 'ipv6-lab.js', 'lab-workbench.js', 'course-practice.js', 'course-practice-models.js', 'switching.js', 'switching-core.js', 'operations-core.js', 'operations-courses.js', 'replay.js', 'practice-records.js', 'course-catalog.js']) publicFiles.add(file);
 for (const file of ['systems.html', 'systems.js', 'systems-labs.js', 'systems-models.js']) publicFiles.add(file);
-export function createLabServer(config = deploymentConfig()) {
+for (const file of ['linux-course.js', 'linux-course-content.js', 'linux-course-labs.js', 'linux-course-models.js']) publicFiles.add(file);
+for (const file of ['sign-in.html', 'sign-in.js', 'learner-access.css']) publicFiles.add(file);
+for (const file of ['cybersecurity-courses.html', 'networking-courses.html', 'linux-courses.html', 'training-home.js']) publicFiles.add(file);
+export function createLabServer(config = deploymentConfig(), { deliverCode } = {}) {
+const basePath = config.basePath || '';
 const dataDir = path.resolve(process.env.NETWORK_LAB_DATA_DIR || path.join(root, '.assessment-data'));
 const dataRelative = path.relative(root, dataDir);
 if (config.production && (!dataRelative || (!dataRelative.startsWith('..' + path.sep) && !path.isAbsolute(dataRelative)))) throw Error('Production data must be outside the application directory.');
 const records = createRecordStore(dataDir);
-const assessment = createAssessmentService(root, dataDir, (req, type, detail) => accounts.record(req.account, type, detail), records);
-const accounts = createAccounts(dataDir, process.env, undefined, records);
+const payments = createPayments(records, config);
+const assessment = createAssessmentService(root, dataDir, (req, type, detail) => accounts.record(req.account, type, detail), records, payments);
+const accounts = createAccounts(dataDir, process.env, undefined, records, basePath, deliverCode);
 const allow = createRateLimiter();
 const server = http.createServer({ maxHeaderSize: 16384 }, async (req, res) => {
-  securityHeaders(res, config.production);
+  securityHeaders(res, config.production, payments.checkoutOrigin);
   const requestId = randomUUID(); res.setHeader('X-Request-ID', requestId);
   const reject = (status, message) => { res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify({ error: message })); };
   try {
     if (config.origin && req.headers.host !== new URL(config.origin).host) return reject(421, 'Unexpected host.');
-    const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
+    const requested = new URL(req.url, 'http://localhost');
     if (!['GET', 'HEAD', 'POST'].includes(req.method)) { res.setHeader('Allow', 'GET, HEAD, POST'); return reject(405, 'Method not allowed.'); }
+    if (basePath && requested.pathname === basePath && req.method !== 'POST') {
+      res.writeHead(308, { Location: basePath + '/' + requested.search }); res.end(); return;
+    }
+    if (!requested.pathname.startsWith(basePath + '/')) return reject(404, 'Not found.');
+    const pathname = decodeURIComponent(requested.pathname.slice(basePath.length));
     if (pathname === '/health/live' || pathname === '/health/ready') {
       if (pathname.endsWith('ready')) { await access(dataDir, constants.R_OK | constants.W_OK); await records.ready(); }
       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end('{"status":"ok"}'); return;
     }
     if (pathname.startsWith('/api/') || pathname.startsWith('/auth/')) {
+      if (pathname === '/api/payments/authorize-net/webhook') {
+        await payments.route(req, res, pathname);
+        return;
+      }
       const ip = clientAddress(req, config.proxy);
-      if (!allow(ip + ':api', 180) || (['/api/register', '/api/retake', '/api/submit'].includes(pathname) && !allow(ip + ':attempt', 15)) || (pathname === '/api/certificate' && !allow(ip + ':pdf', 10))) {
+      if (!allow(ip + ':api', 180) || (['/api/register', '/api/retake', '/api/submit', '/api/guided'].includes(pathname) && !allow(ip + ':attempt', 15)) || (pathname === '/api/certificate' && !allow(ip + ':pdf', 10)) ||
+          (pathname.startsWith('/api/payments/') && !allow(ip + ':payment', 12))) {
         res.setHeader('Retry-After', '60'); return reject(429, 'Too many requests. Wait before retrying.');
       }
       if (req.method === 'HEAD') return reject(405, 'Use GET for API reads.');
-      if (await accounts.route(req, res, pathname)) return;
+      if (await accounts.route(req, res, pathname, ip)) return;
       req.account = await accounts.current(req);
+      if (pathname.startsWith('/api/payments/')) {
+        await payments.route(req, res, pathname, req.account);
+        return;
+      }
       if (!pathname.startsWith('/api/verify/') && !req.account) return reject(401, 'Sign in before starting an assessment.');
       await assessment(req, res, pathname); return;
     }
@@ -65,7 +85,7 @@ return server;
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const config = deploymentConfig();
   const server = createLabServer(config);
-  server.listen(config.port, config.host, () => console.log(`Network Workshop: ${config.origin || `http://${config.host}:${server.address().port}`}`));
+  server.listen(config.port, config.host, () => console.log(`Network Workshop: ${config.origin || `http://${config.host}:${server.address().port}`}${config.basePath}/`));
   for (const signal of ['SIGTERM', 'SIGINT']) process.once(signal, () => {
     server.close(() => process.exit(0));
     setTimeout(() => process.exit(1), 15000).unref();

@@ -2,7 +2,7 @@ const {spawnSync,spawn}=require('node:child_process');const fs=require('node:fs'
 const playwright=process.argv[2];if(!playwright)throw Error('Pass the configured Playwright module path.');
 const root=path.resolve(__dirname,'..'),results=[];
 const scripts=[
- ['unit regression',['--test','--test-reporter=junit','--test-reporter-destination=review/after-tests.xml','test/core.test.js','test/assessment.test.js','test/security.test.js','test/production.test.js','test/accounts.test.js','test/switching.test.js','test/operations.test.js','test/replay.test.js','test/practice-records.test.js','test/release-gate.test.js','test/record-store.test.js','test/ip-teaching.test.js','test/course-practice.test.js','test/systems.test.js']],
+ ['unit regression',['--test','--test-reporter=junit','--test-reporter-destination=review/after-tests.xml','test/core.test.js','test/assessment.test.js','test/security.test.js','test/production.test.js','test/accounts.test.js','test/switching.test.js','test/operations.test.js','test/replay.test.js','test/practice-records.test.js','test/release-gate.test.js','test/record-store.test.js','test/ip-teaching.test.js','test/course-practice.test.js','test/course-assessments.test.js','test/payments.test.js','test/systems.test.js']],
  ['nonblocking account lookup',['test/startup-browser.cjs',playwright]],
  ['all-course desktop/mobile smoke',['review/all-course-browser.cjs',playwright]],
  ['practice checkpoints and replay',['test/practice-browser.cjs',playwright]],
@@ -11,6 +11,7 @@ const scripts=[
  ['beginner IP and classless calculations',['test/ip-beginner-browser.cjs',playwright]],
  ['applied labs across the catalogue',['test/applied-labs-browser.cjs',playwright]],
  ['systems administration labs',['test/systems-browser.cjs',playwright]],
+ ['learner registration and assessment instructions',['test/learner-access-browser.cjs',playwright]],
  ['switching fault/aging/replay',['test/switching-browser.cjs',playwright]],
  ['security investigations',['test/security-browser.cjs',playwright]],
  ['security study evidence',['test/study-browser.cjs',playwright]],

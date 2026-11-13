@@ -7,7 +7,7 @@ const fs=require('node:fs/promises');
   const page=await browser.newPage({viewport:{width:1360,height:1000}});page.setDefaultTimeout(15000);
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   const base='http://127.0.0.1:4317/';
-  await page.goto(base);assert.equal(await page.locator('[aria-labelledby="training-courses"] .course-launch').count(),13);
+  await page.goto(base);await page.getByRole('link',{name:'Explore Networking Courses',exact:true}).click();assert.equal(await page.locator('#networks .course-launch').count(),10);
   await page.getByRole('link',{name:'Start IP Addressing',exact:true}).click();
   await page.locator('#binary-lab').waitFor();
   const binary=page.locator('#binary-lab'), cidr=page.locator('#class-cidr-lab');

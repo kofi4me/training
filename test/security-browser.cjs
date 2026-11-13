@@ -1,7 +1,7 @@
 const { chromium }=require(process.argv[2]); const assert=require('node:assert/strict'); const path=require('node:path');
 (async()=>{const browser=await chromium.launch({channel:'chrome',headless:true});try{
   const page=await browser.newPage({viewport:{width:1440,height:1100}});page.setDefaultTimeout(20000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto('http://127.0.0.1:4317/');await page.getByRole('link',{name:'Start MiTM training'}).click();
+  await page.goto('http://127.0.0.1:4317/');await page.getByRole('link',{name:'Explore Cybersecurity Courses',exact:true}).click();await page.getByRole('link',{name:'Start MiTM training'}).click();
   await page.locator('#send-session').click();assert.equal(await page.locator('#observer-view').textContent(),'No traffic traverses the observer.');
   await page.locator('#mitm-protocol').selectOption('http');await page.locator('#poison-cache').click();await page.locator('#mitm-tamper').check();await page.locator('#send-session').click();
   assert.match(await page.locator('#mapping-value').textContent(),/MISMATCH/);assert.match(await page.locator('#observer-view').textContent(),/2500/);assert.match(await page.locator('#recipient-view').textContent(),/Modified/);

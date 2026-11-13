@@ -7,7 +7,8 @@ test('question selections contain ten unique questions with balanced coverage', 
     assert.equal(ids.filter(id => bank.find(q => q.id === id).topic === 'subnetting').length, 4);
   }
 });
-test('80 percent passes, 70 fails, incomplete answers cannot pass', () => {
+test('the ten-question quiz applies the 75 percent pass mark', () => {
+  assert.equal(course.passMark, 75);
   const ids = bank.slice(0, 10).map(q => q.id);
   const answers = Object.fromEntries(ids.map(id => { const q = bank.find(q => q.id === id); return [id, q.type === 'number' ? String(q.answer) : q.answer]; }));
   const wrong = id => { const q = bank.find(q => q.id === id); return q.type === 'number' ? '-1' : (q.answer + 1) % q.options.length; };

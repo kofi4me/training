@@ -3,7 +3,7 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;'
 async function verify() {
   record.hidden = true; status.textContent = 'Checking issuer record...';
   try {
-    const response = await fetch('/api/verify/' + encodeURIComponent(input.value.trim())); const data = await response.json(); if (!response.ok) throw Error(data.error);
+    const response = await fetch('api/verify/' + encodeURIComponent(input.value.trim())); const data = await response.json(); if (!response.ok) throw Error(data.error);
     status.textContent = 'Issuer completion record found.';
     record.innerHTML = `<h2>${esc(data.name)}</h2><p>${esc(data.course)} / ${data.score}% / ${esc(data.date.slice(0, 10))}</p><p>Issuer: ${esc(data.issuer)}</p><label class="field">Compare downloaded PDF<input id="compare-pdf" type="file" accept="application/pdf"></label><p id="file-status" role="status">Select the PDF to compare it with the issued file.</p>`; record.hidden = false;
     document.querySelector('#compare-pdf').onchange = async event => {

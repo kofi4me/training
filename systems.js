@@ -2,42 +2,9 @@ import './account-nav.js';
 import { courseForLocation, courseLabels } from './course-catalog.js';
 import { mountLabWorkbench } from './lab-workbench.js';
 import { systemsLabs } from './systems-labs.js';
+import { mountLinuxCourse } from './linux-course.js';
 
 const lessons = {
-  linux: {
-    intro: 'Provision local Linux accounts, reason about effective permissions, and restore a systemd service without weakening access controls.',
-    sections: [
-      `<h2>Accounts, groups and process credentials</h2>
-      <p>A user account maps a login name to a numeric UID and a primary group ID (GID). A group is a named identity to which access can be granted. A private primary group can keep one user's files separate; supplementary groups grant team access without replacing that primary group. Linux checks the credentials of the process making a request, not just the current contents of the account database.</p>
-      <p>On a host using local accounts, <code>getent passwd</code> and <code>getent group</code> look up identities. A named <code>id</code> query looks up an account; <code>id</code> with no username reports the current process identity and group list. Existing sessions do not acquire new supplementary groups automatically. Re-test with a new session before concluding that an access rule failed.</p>
-      <details class="lab-checkpoint"><summary>Worked Linux commands for a disposable VM</summary>
-      <p>Use a snapshot of an isolated Linux VM with shadow utilities and sudo. Confirm the example users, group and directory do not already exist. These commands change the VM; do not run them on the KryptNet server. Authentication credentials are not needed for the administrator-run identity probes.</p>
-      <pre><code>sudo groupadd supportlab
-sudo useradd -m -U laboperator
-sudo useradd -m -U labanalyst
-sudo useradd -m -U labguest
-sudo usermod -aG supportlab laboperator
-sudo usermod -aG supportlab labanalyst
-sudo install -d -o root -g supportlab -m 2770 /srv/supportlab
-getent group supportlab
-sudo -u laboperator -- id
-sudo -u laboperator -- touch /srv/supportlab/example.txt
-sudo -u labanalyst -- test -w /srv/supportlab
-stat -c '%U %G %a' /srv/supportlab/example.txt
-sudo -u labguest -- test -x /srv/supportlab
-echo "$?"</code></pre>
-      <p>The last probe should return 1. The sample file should belong to <code>supportlab</code>. The <code>-a</code> in <code>usermod -aG</code> appends membership; omitting it can replace existing supplementary groups. Reset the VM snapshot when finished.</p>
-      <p>References: <a href="https://man7.org/linux/man-pages/man8/groupadd.8.html">groupadd(8)</a>, <a href="https://man7.org/linux/man-pages/man8/useradd.8.html">useradd(8)</a>, <a href="https://man7.org/linux/man-pages/man8/usermod.8.html">usermod(8)</a>.</p></details>`,
-      `<h2>Ownership, octal modes and path traversal</h2>
-      <p>In a permission digit, read is 4, write is 2, and execute or search is 1. <code>0640</code> gives the owner read and write, the group read, and others no access. For a directory, read lists names, search looks up a known name, and write combined with search can create or remove directory entries. Access to a file also requires search permission on its parent directories.</p>
-      <p>In <code>2770</code>, the leading <code>2</code> sets set-group-ID. In this directory, new entries inherit the directory group; their own mode bits still depend on how they are created. A read-only file can still be replaced by a user who can write and search its parent directory, unless another control such as a sticky directory rule prevents that operation.</p>
-      <details class="lab-checkpoint"><summary>Knowledge check: 0740 or 0710?</summary><p><strong>Question:</strong> Which mode lets a group member open a known filename without granting permission to list the directory?</p><p><strong>Answer:</strong> 0710 grants group search but not directory read. The file itself must also allow the requested operation. 0740 allows listing names but lacks search.</p></details>`,
-      `<h2>Service lifecycle and fault isolation</h2>
-      <p>A service definition describes the executable, runtime identity and dependencies. Starting a unit activates it now; enabling it configures boot activation in the unit's supported target. Neither proves that the application answers a valid request. Test the expected application response and repeat after a simulated reboot.</p>
-      <p>On a systemd VM, inspect <code>systemctl status portal.service</code> and <code>journalctl -u portal.service -b</code> before changing permissions or ports. Use <code>ss -ltn</code> to check listening TCP sockets. A permissions failure can hide the next fault; once the service reads its configuration, the journal may expose an address already in use. Repair the lowest demonstrated failing dependency, then rerun the same probe.</p>
-      <details class="lab-checkpoint"><summary>Knowledge check: service active, client fails</summary><p><strong>Question:</strong> Portal is active on 8081, but the client still calls 8080. What should you verify before restarting it?</p><p><strong>Answer:</strong> Verify the client's destination and an application-specific response on 8081. A response on 8080 might come from the legacy listener.</p></details>`
-    ]
-  },
   automation: {
     intro: 'Write and inspect Bash and Python examples, then test how input validation, repeatability and scheduling affect a service operation.',
     sections: [
@@ -100,21 +67,25 @@ sys.exit(1 if errors &gt;= 2 else 0)</code></pre></details>`,
 
 const content = document.querySelector('#systems-content');
 const id = courseForLocation(location.pathname, location.search) || 'linux';
-const course = lessons[id];
 const title = courseLabels[id];
-document.title = `${title} | KryptNet`;
+document.title = title + ' | KryptNet';
 document.querySelector('#training-title').textContent = title;
-document.querySelector('#systems-intro').textContent = course.intro;
-document.querySelector(`[data-course="${id}"]`).setAttribute('aria-current', 'page');
+document.querySelector('[data-course="' + id + '"]').setAttribute('aria-current', 'page');
 
-for (const [index, definition] of systemsLabs[id].entries()) {
-  const lesson = document.createElement('section');
-  lesson.className = 'systems-lesson';
-  lesson.innerHTML = course.sections[index];
-  content.append(lesson);
-  mountLabWorkbench(content, definition);
-  const link = document.createElement('a');
-  link.href = `#${definition.id}`;
-  link.textContent = `Lab ${index + 1}: ${definition.level}`;
-  document.querySelector('#systems-jumps').append(link);
+if (id === 'linux') {
+  mountLinuxCourse(content, document.querySelector('#systems-jumps'), document.querySelector('#systems-intro'));
+} else {
+  const course = lessons[id];
+  document.querySelector('#systems-intro').textContent = course.intro;
+  for (const [index, definition] of systemsLabs[id].entries()) {
+    const lesson = document.createElement('section');
+    lesson.className = 'systems-lesson';
+    lesson.innerHTML = course.sections[index];
+    content.append(lesson);
+    mountLabWorkbench(content, definition);
+    const link = document.createElement('a');
+    link.href = '#' + definition.id;
+    link.textContent = 'Lab ' + (index + 1) + ': ' + definition.level;
+    document.querySelector('#systems-jumps').append(link);
+  }
 }

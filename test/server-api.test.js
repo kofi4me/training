@@ -45,8 +45,10 @@ test('issuer API locks registration, grades on server, protects issuance, and fi
     assert.equal(publicRecord.sha256, createHash('sha256').update(bytes).digest('hex'));
     assert.equal(publicRecord.email, undefined);
     assert.equal((await request('/api/retake', { name: 'Other Learner' })).status, 400);
-    state = await (await request('/api/retake', {})).json(); assert.equal(state.profile.name, profile.name);
-    assert.ok(state.credential);
+    assert.equal((await request('/api/retake', {})).status, 409);
+    const retained = await (await request('/api/assessment')).json();
+    assert.equal(retained.profile.name, profile.name);
+    assert.equal(retained.credential.id, state.credential.id);
     const reloaded = createAssessmentService(root, dir);
     server.removeAllListeners('request'); server.on('request', (req, res) => reloaded(req, res, new URL(req.url, base).pathname));
     assert.equal((await (await request('/api/assessment')).json()).profile.name, profile.name);

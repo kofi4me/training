@@ -19,7 +19,7 @@ export function createReplay({onChange=()=>{},delay=1400,schedule=setTimeout,can
   };
 }
 
-export function mountReplay(host,{build,onFrame=()=>{},onError=()=>{},playSelector='[data-play]',nextSelector='[data-next]',resetSelector='[data-reset]',statusSelector='.module-result',playLabel='Play',pauseLabel='Pause',separator='of'}){
+export function mountReplay(host,{build,onFrame=()=>{},onError=()=>{},playSelector='[data-play]',nextSelector='[data-next]',resetSelector='[data-reset]',statusSelector='.module-result',playLabel='Play',pauseLabel='Pause',separator='of',delay=1400}){
   const play=host.querySelector(playSelector),next=host.querySelector(nextSelector),reset=host.querySelector(resetSelector),status=host.querySelector(statusSelector);
   if(!play||!next||!reset||!status)throw Error('Missing replay controls.');
   const previous=document.createElement('button');previous.type='button';previous.textContent='Previous step';previous.dataset.replayPrevious='';
@@ -30,7 +30,7 @@ export function mountReplay(host,{build,onFrame=()=>{},onError=()=>{},playSelect
   const details=document.createElement('details');details.className='replay-events';const summary=document.createElement('summary');summary.textContent='Event timeline and inspection';const timeline=document.createElement('ol');timeline.className='replay-timeline';details.append(summary,timeline);status.after(details);
   host.dataset.sharedReplay='true';
   let replay;
-  replay=createReplay({onChange:s=>{
+  replay=createReplay({delay,onChange:s=>{
     play.textContent=s.running?pauseLabel:playLabel;play.disabled=!s.events.length;next.disabled=s.cursor===s.events.length-1||!s.events.length;previous.disabled=s.cursor<0;
     speed.value=String(s.speed);
     const event=s.events[s.cursor];const message=typeof event==='string'?event:event?.message;

@@ -2,17 +2,28 @@ import * as oidc from 'openid-client';
 import { randomBytes, createHash } from 'node:crypto';
 import { createFileRecordStore } from './record-store.js';
 import { courseLabels } from './course-catalog.js';
+import { createLearnerCredentials } from './learner-credentials.js';
 const hash = value => createHash('sha256').update(value).digest('hex');
 const courses = new Set(Object.keys(courseLabels));
 
-export function createAccounts(dataDir, env = process.env, providerOverride, records = createFileRecordStore(dataDir)) {
+export function createAccounts(dataDir, env = process.env, providerOverride, records = createFileRecordStore(dataDir), basePath = env.NETWORK_LAB_BASE_PATH || '', deliverCode) {
   const origin = env.NETWORK_LAB_PUBLIC_ORIGIN;
   const sameOrigin = req => req.headers.origin === (origin || (env.NODE_ENV !== 'production' ? `${env.NETWORK_LAB_HTTPS === '1' ? 'https' : 'http'}://${req.headers.host}` : null));
-  const enabled = Boolean(origin && env.OIDC_ISSUER && env.OIDC_CLIENT_ID && env.OIDC_CLIENT_SECRET);
+  const providerEnabled = Boolean(origin && env.OIDC_ISSUER && env.OIDC_CLIENT_ID && env.OIDC_CLIENT_SECRET &&
+    env.OIDC_ISSUER !== 'https://your-identity-provider.example' && env.OIDC_CLIENT_ID !== 'replace-with-client-id');
+  const local = createLearnerCredentials(records, env, deliverCode);
+  const enabled = providerEnabled || local.enabled;
   const admins = new Set((env.KRYPTNET_ADMIN_IDS || '').split(',').filter(Boolean));
   const pending = new Map();
   const secure = env.NETWORK_LAB_HTTPS === '1' ? '; Secure' : '';
+  const sessionPath = basePath + '/';
+  const oauthPath = basePath + '/auth';
+  const callbackUrl = origin + oauthPath + '/callback';
   const read = records.read, write = records.write;
+  function returnTo({ returnTo, course }) {
+    if (returnTo !== 'assessment') return basePath + '/account.html';
+    return basePath + '/assessment.html' + (courses.has(course) ? '?course=' + encodeURIComponent(course) : '');
+  }
   let discovered;
   async function provider() {
     if (providerOverride) return providerOverride;
@@ -24,11 +35,14 @@ export function createAccounts(dataDir, env = process.env, providerOverride, rec
     };
   }
   async function current(req) {
+    if (!enabled && env.NETWORK_LAB_ALLOW_ANONYMOUS_PRACTICE === '1') return null;
     const raw = /(?:^|;\s*)kn_login=([a-f0-9]{64})(?:;|$)/.exec(req.headers.cookie || '')?.[1];
     if (!raw) return null;
     const session = await read('login-' + hash(raw) + '.json');
     if (!session || session.expires < Date.now()) return null;
-    return read('account-' + session.accountId + '.json');
+    const account = await read('account-' + session.accountId + '.json');
+    if (account?.localAuth && account.localAuth.version !== session.authVersion) return null;
+    return account;
   }
   async function record(account, type, detail = {}) {
     if (!account) return;
@@ -47,8 +61,17 @@ export function createAccounts(dataDir, env = process.env, providerOverride, rec
     return latest;
     });
   }
-  async function route(req, res, pathname) {
+  async function newSession(account) {
+    await record(account, 'signed_in');
+    const raw = randomBytes(32).toString('hex');
+    await write('login-' + hash(raw) + '.json', {
+      accountId: account.id, expires: Date.now() + 8 * 3600000, authVersion: account.localAuth?.version,
+    });
+    return `kn_login=${raw}; HttpOnly; SameSite=Lax; Path=${sessionPath}; Max-Age=28800${secure}`;
+  }
+  async function route(req, res, pathname, ip = req.socket.remoteAddress || 'unknown') {
     const json = (status, value) => { res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(value)); };
+    if (await local.route(req, res, pathname, ip, { sameOrigin, newSession, returnTo })) return true;
     if (pathname === '/api/account' && req.method === 'GET') {
       let account = await current(req);
       if (account && account.lastSeen?.slice(0, 10) !== new Date().toISOString().slice(0, 10)) {
@@ -61,25 +84,38 @@ export function createAccounts(dataDir, env = process.env, providerOverride, rec
           return latest;
         });
       }
-      json(200, { enabled, account: account ? { id: account.id, name: account.name, email: account.email, courses: account.courses, certificates: account.certificates || [], admin: admins.has(account.id) } : null }); return true;
+      json(200, { enabled, methods: { email: local.enabled, provider: providerEnabled }, account: account ? { id: account.id, name: account.name, email: account.email, organization: account.organization || '', courses: account.courses, certificates: account.certificates || [], admin: admins.has(account.id) } : null }); return true;
     }
     if (pathname === '/auth/login' && req.method === 'GET') {
-      if (!enabled) { json(503, { error: 'Sign-in is not configured. The operator must connect an identity provider.' }); return true; }
+      const request = new URL(req.url, 'http://localhost');
+      const search = new URLSearchParams();
+      if (request.searchParams.get('returnTo') === 'assessment') {
+        search.set('returnTo', 'assessment');
+        const course = request.searchParams.get('course');
+        if (courses.has(course)) search.set('course', course);
+      }
+      res.writeHead(302, { Location: basePath + '/sign-in.html' + (search.size ? '?' + search : ''), 'Cache-Control': 'no-store' }); res.end(); return true;
+    }
+    if (pathname === '/auth/provider' && req.method === 'GET') {
+      if (!providerEnabled) { json(503, { error: 'Provider sign-in is unavailable.' }); return true; }
       for (const [id, value] of pending) if (value.expires < Date.now()) pending.delete(id);
       if (pending.size >= 1000) { json(503, { error: 'Sign-in is busy. Please retry.' }); return true; }
       const binding = randomBytes(32).toString('hex'), state = oidc.randomState(), nonce = oidc.randomNonce(), verifier = oidc.randomPKCECodeVerifier();
       const p = await provider();
-      const url = await p.start({ redirect_uri: origin + '/auth/callback', scope: 'openid email profile', response_type: 'code', state, nonce, code_challenge: await oidc.calculatePKCECodeChallenge(verifier), code_challenge_method: 'S256' });
-      const returnTo = new URL(req.url, origin).searchParams.get('returnTo') === 'assessment' ? '/assessment.html' : '/account.html';
-      pending.set(hash(binding), { state, nonce, verifier, returnTo, expires: Date.now() + 300000 });
-      res.writeHead(302, { Location: url.toString(), 'Cache-Control': 'no-store', 'Set-Cookie': `kn_oauth=${binding}; HttpOnly; SameSite=Lax; Path=/auth; Max-Age=300${secure}` }); res.end(); return true;
+      const url = await p.start({ redirect_uri: callbackUrl, scope: 'openid email profile', response_type: 'code', state, nonce, code_challenge: await oidc.calculatePKCECodeChallenge(verifier), code_challenge_method: 'S256' });
+      const request = new URL(req.url, origin);
+      const destination = returnTo({ returnTo: request.searchParams.get('returnTo'), course: request.searchParams.get('course') });
+      pending.set(hash(binding), { state, nonce, verifier, destination, expires: Date.now() + 300000 });
+      res.writeHead(302, { Location: url.toString(), 'Cache-Control': 'no-store', 'Set-Cookie': `kn_oauth=${binding}; HttpOnly; SameSite=Lax; Path=${oauthPath}; Max-Age=300${secure}` }); res.end(); return true;
     }
     if (pathname === '/auth/callback' && req.method === 'GET') {
       const binding = /(?:^|;\s*)kn_oauth=([a-f0-9]{64})(?:;|$)/.exec(req.headers.cookie || '')?.[1];
       const check = binding && pending.get(hash(binding));
       if (binding) pending.delete(hash(binding));
-      if (!enabled || !check || check.expires < Date.now()) { json(400, { error: 'Sign-in expired or could not be verified. Start sign-in again.' }); return true; }
-      const claims = await (await provider()).exchange(new URL(req.url, origin), { pkceCodeVerifier: check.verifier, expectedState: check.state, expectedNonce: check.nonce });
+      if (!providerEnabled || !check || check.expires < Date.now()) { json(400, { error: 'Sign-in expired or could not be verified. Start sign-in again.' }); return true; }
+      const responseUrl = new URL(callbackUrl);
+      responseUrl.search = new URL(req.url, origin).search;
+      const claims = await (await provider()).exchange(responseUrl, { pkceCodeVerifier: check.verifier, expectedState: check.state, expectedNonce: check.nonce });
       if (!claims || claims.iss !== env.OIDC_ISSUER || typeof claims.sub !== 'string' || !claims.sub || claims.email_verified !== true || typeof claims.email !== 'string' || claims.email.length > 120) { json(403, { error: 'A verified email address is required.' }); return true; }
       const id = hash(JSON.stringify([claims.iss, claims.sub]));
       const account = await records.update('account-' + id + '.json', existing => {
@@ -87,16 +123,13 @@ export function createAccounts(dataDir, env = process.env, providerOverride, rec
       account.name = String(claims.name || claims.email).slice(0, 80); account.email = claims.email;
       return account;
       });
-      await record(account, 'signed_in');
-      const raw = randomBytes(32).toString('hex');
-      await write('login-' + hash(raw) + '.json', { accountId: id, expires: Date.now() + 8 * 3600000 });
-      res.writeHead(302, { Location: check.returnTo, 'Cache-Control': 'no-store', 'Set-Cookie': [`kn_login=${raw}; HttpOnly; SameSite=Lax; Path=/; Max-Age=28800${secure}`, `kn_oauth=; HttpOnly; SameSite=Lax; Path=/auth; Max-Age=0${secure}`] }); res.end(); return true;
+      res.writeHead(302, { Location: check.destination, 'Cache-Control': 'no-store', 'Set-Cookie': [await newSession(account), `kn_oauth=; HttpOnly; SameSite=Lax; Path=${oauthPath}; Max-Age=0${secure}`] }); res.end(); return true;
     }
     if (pathname === '/api/logout' && req.method === 'POST') {
       if (!sameOrigin(req)) { json(403, { error: 'A same-origin request is required.' }); return true; }
       const raw = /(?:^|;\s*)kn_login=([a-f0-9]{64})(?:;|$)/.exec(req.headers.cookie || '')?.[1];
       if (raw) await records.remove('login-' + hash(raw) + '.json');
-      res.setHeader('Set-Cookie', `kn_login=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${secure}`); json(200, { signedOut: true }); return true;
+      res.setHeader('Set-Cookie', `kn_login=; HttpOnly; SameSite=Lax; Path=${sessionPath}; Max-Age=0${secure}`); json(200, { signedOut: true }); return true;
     }
     if (pathname === '/api/activity' && req.method === 'POST') {
       const account = await current(req);
@@ -113,7 +146,7 @@ export function createAccounts(dataDir, env = process.env, providerOverride, rec
       const account = await current(req);
       if (!account || !admins.has(account.id)) { json(403, { error: 'Issuer administrator access is required.' }); return true; }
       // Server-controlled records only; no learner-supplied roles are trusted.
-      const learners = await records.listAccounts();
+      const learners = (await records.listAccounts()).map(({ localAuth, ...learner }) => learner);
       json(200, { learners }); return true;
     }
     return false;

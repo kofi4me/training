@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Learner Account | KryptNet Training Labs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="learner-access.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand assessment-brand" href="courses.html"><img src="assets/kryptnet-logo.jpg" alt="KryptNet LLC"><span>Training Labs</span></a>
+    <a class="guide-link" href="courses.html">Course catalog</a>
+  </header>
+  <main class="learner-access">
+    <section class="learner-overview">
+      <h1>Learner account</h1>
+      <p id="selected-course" hidden></p>
+      <ol>
+        <li>Verify your email and create an account.</li>
+        <li>Sign in and pay for your selected assessment through Authorize.Net.</li>
+        <li>Read the instructions and take the test.</li>
+      </ol>
+      <p id="selected-fee" hidden></p>
+      <p><a href="privacy.html">Learner data and privacy</a></p>
+    </section>
+    <section class="learner-panel" aria-labelledby="access-heading">
+      <div class="learner-switch" role="group" aria-label="Learner account options">
+        <button type="button" data-mode="register" aria-pressed="true">Create account</button>
+        <button type="button" data-mode="login" aria-pressed="false">Sign in</button>
+      </div>
+      <h2 id="access-heading" tabindex="-1">Create your account</h2>
+      <p id="access-status" role="status"></p>
+      <form id="request-code" method="post">
+        <fieldset id="request-fields" disabled>
+          <fieldset id="registration-fields">
+            <label class="field">Full name <input name="name" required minlength="2" maxlength="80" autocomplete="name"></label>
+            <label class="field">Organization (optional) <input name="organization" maxlength="80" autocomplete="organization"></label>
+          </fieldset>
+          <label class="field">Email address <input name="email" required type="email" maxlength="120" autocomplete="email"></label>
+          <button class="learner-cta" type="submit">Send verification code</button>
+        </fieldset>
+      </form>
+      <form id="verify-code" method="post" hidden>
+        <label class="field">Verification code <input name="code" required pattern="[0-9]{6}" maxlength="6" inputmode="numeric" autocomplete="one-time-code"></label>
+        <label class="field">Choose a password <input name="password" type="password" required minlength="15" maxlength="256" autocomplete="new-password" aria-describedby="password-hint"></label>
+        <p id="password-hint">Use 15 to 128 characters. A longer passphrase works well.</p>
+        <button class="learner-cta" id="confirm-code" type="submit">Verify and create account</button>
+        <button type="button" id="change-email">Change email or request a new code</button>
+      </form>
+      <form id="learner-login" method="post" hidden>
+        <fieldset id="login-fields" disabled>
+          <label class="field">Email address <input name="email" required type="email" maxlength="120" autocomplete="username"></label>
+          <label class="field">Password <input name="password" required type="password" maxlength="256" autocomplete="current-password"></label>
+          <button class="learner-cta" type="submit">Sign in</button>
+          <button id="forgot-password" type="button">Reset password</button>
+        </fieldset>
+      </form>
+      <p id="provider-option" hidden><a id="provider-link" href="auth/provider">Continue with your existing sign-in provider</a></p>
+      <noscript>Enable JavaScript to use learner registration and sign-in.</noscript>
+    </section>
+  </main>
+  <script type="module" src="sign-in.js"></script>
+</body>
+</html>
