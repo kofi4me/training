@@ -1,0 +1,17 @@
+const {chromium}=require(process.argv[2]);const assert=require('node:assert/strict');const fs=require('node:fs/promises');
+(async()=>{const browser=await chromium.launch({channel:'chrome',headless:true});try{
+ const page=await browser.newPage({viewport:{width:390,height:844}});page.setDefaultTimeout(12000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('http://127.0.0.1:4317/courses.html');await page.getByRole('link',{name:'Start Switching',exact:true}).click();await page.locator('#switch-prepare').waitFor();
+ const send=async(source,target)=>{await page.locator('#switch-source').selectOption(source);await page.locator('#switch-target').selectOption(target);await page.locator('#switch-prepare').click();for(let i=0;i<5&&await page.locator('#switch-step').isEnabled();i++)await page.locator('#switch-step').click();};
+ await page.locator('#switch-prediction').selectOption('unknown');await send('A','B');assert.match(await page.locator('#switch-status').innerText(),/PC B, PC C.*acceptance: B/);assert.match(await page.locator('#switch-feedback').innerText(),/matches/);
+ await send('B','A');await send('A','B');assert.match(await page.locator('#switch-status').innerText(),/Egress copies: PC B\./);assert.equal(await page.locator('#switch-table tr').count(),2);
+ const clock=await page.locator('#switch-clock').innerText();await page.locator('#switch-replay').click();await page.locator('#switch-play').click();await page.getByText('Step 2 / 4:',{exact:false}).waitFor();await page.locator('#switch-play').click();assert.equal(await page.locator('#switch-play').innerText(),'Play');assert.equal(await page.locator('#switch-clock').innerText(),clock);
+ await page.locator('#switch-age').click();assert.match(await page.locator('#switch-table').innerText(),/No learned/);await send('A','B');assert.match(await page.locator('#switch-log').innerText(),/unknown/);
+ await page.locator('[data-switch-vlan="4"]').selectOption('10');await send('A','broadcast');assert.match(await page.locator('#switch-status').innerText(),/acceptance: B, C, D/);
+ await page.locator('[data-switch-link="2"]').uncheck();await send('B','A');assert.match(await page.locator('#switch-status').innerText(),/no operational/);
+ await page.locator('#switch-reset').click();assert.match(await page.locator('#switch-clock').innerText(),/time: 0/);
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await fs.mkdir('artifacts',{recursive:true});await page.screenshot({path:'artifacts/switching-mobile.png',fullPage:true});
+ await page.setViewportSize({width:1360,height:1000});await page.screenshot({path:'artifacts/switching-desktop.png',fullPage:true});
+ await page.locator('.training-nav').getByRole('link',{name:'Homepage',exact:true}).click();await page.getByText('Planned courses',{exact:false}).click();await page.getByText('DHCP Operations',{exact:true}).waitFor();await page.getByText('AI Agent Security and Prompt Injection',{exact:true}).waitFor();
+ assert.deepEqual(errors,[]);console.log('Switching UI passed: prediction, learning, flooding, known unicast, replay, aging, VLAN boundaries, links, reset, mobile and planned-course retention.');
+}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

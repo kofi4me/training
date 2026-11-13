@@ -1,0 +1,24 @@
+const { chromium }=require(process.argv[2]); const assert=require('node:assert/strict'); const path=require('node:path');
+(async()=>{const browser=await chromium.launch({channel:'chrome',headless:true});try{
+  const page=await browser.newPage({viewport:{width:1440,height:1100}});page.setDefaultTimeout(20000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto('http://127.0.0.1:4317/');await page.getByRole('link',{name:'Start MiTM training'}).click();
+  await page.locator('#send-session').click();assert.equal(await page.locator('#observer-view').textContent(),'No traffic traverses the observer.');
+  await page.locator('#mitm-protocol').selectOption('http');await page.locator('#poison-cache').click();await page.locator('#mitm-tamper').check();await page.locator('#send-session').click();
+  assert.match(await page.locator('#mapping-value').textContent(),/MISMATCH/);assert.match(await page.locator('#observer-view').textContent(),/2500/);assert.match(await page.locator('#recipient-view').textContent(),/Modified/);
+  await page.locator('#mitm-protocol').selectOption('https');await page.locator('#send-session').click();assert.match(await page.locator('#observer-view').textContent(),/Encrypted/);assert.doesNotMatch(await page.locator('#recipient-view').textContent(),/Modified/);
+  await page.locator('#mitm-forward').uncheck();await page.locator('#send-session').click();await page.getByRole('heading',{name:'Message not delivered'}).waitFor();
+  await page.locator('#mitm-binding').check();await page.locator('#poison-cache').click();assert.match(await page.locator('#mapping-value').textContent(),/Expected/);
+  await page.screenshot({path:path.join(__dirname,'../artifacts/mitm-desktop.png'),fullPage:true});
+  await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await page.screenshot({path:path.join(__dirname,'../artifacts/mitm-mobile.png'),fullPage:true});
+  await page.locator('#security-lab').selectOption('ddos');await page.locator('#load-step').click();assert.match(await page.locator('#load-history').textContent(),/40/);
+  await page.locator('#load-attack').check();for(let i=0;i<5;i++)await page.locator('#load-step').click();
+  assert.ok(await page.locator('#load-history tr').count()>1);
+  const painted=await page.locator('#load-chart').evaluate(canvas=>{const pixels=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;let count=0;for(let i=0;i<pixels.length;i+=4)if(pixels[i]<100&&pixels[i+2]>130)count++;return count;});assert.ok(painted>100);
+  await page.locator('#load-limiting').check();await page.locator('#load-step').click();
+  await page.locator('#load-run').click();assert.equal(await page.locator('#load-run').textContent(),'Pause');await page.locator('#load-run').click();assert.equal(await page.locator('#load-run').textContent(),'Run');
+  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);assert.equal(overflow,false);
+  await page.screenshot({path:path.join(__dirname,'../artifacts/ddos-mobile.png'),fullPage:true});await page.setViewportSize({width:1440,height:1100});await page.screenshot({path:path.join(__dirname,'../artifacts/ddos-desktop.png'),fullPage:true});
+  await page.reload();assert.equal(await page.locator('#load-attack').isChecked(),true);
+  await page.locator('#load-reset').click();assert.equal(await page.locator('#load-attack').isChecked(),false);
+  assert.deepEqual(errors,[]);console.log('Security browser checks passed: course selection, plaintext/TLS views, redirection, disruption, binding defense, DDoS steps, chart pixels, controls, persistence and mobile layouts.');
+}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

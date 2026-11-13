@@ -1,0 +1,65 @@
+services:
+  app:
+    build: ..
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      NETWORK_LAB_PUBLIC_ORIGIN: https://${KRYPTNET_DOMAIN:?Set KRYPTNET_DOMAIN}
+      NETWORK_LAB_HTTPS: '1'
+      NETWORK_LAB_TRUSTED_PROXY: 172.30.81.2
+      OIDC_ISSUER: ${OIDC_ISSUER:?Set OIDC_ISSUER}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:?Set OIDC_CLIENT_ID}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:?Set OIDC_CLIENT_SECRET}
+      KRYPTNET_ADMIN_IDS: ${KRYPTNET_ADMIN_IDS:-}
+      KRYPTNET_STORAGE: ${KRYPTNET_STORAGE:-files}
+      KRYPTNET_DATABASE_URL: ${KRYPTNET_DATABASE_URL:-}
+      KRYPTNET_DATABASE_TLS: ${KRYPTNET_DATABASE_TLS:-verify-full}
+    volumes:
+      - learner_data:/var/lib/kryptnet
+    networks:
+      backend:
+        ipv4_address: 172.30.81.3
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:4317/health/ready',{headers:{host:new URL(process.env.NETWORK_LAB_PUBLIC_ORIGIN).host}}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    mem_limit: 512m
+    pids_limit: 64
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+  proxy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ['80:80', '443:443', '443:443/udp']
+    environment:
+      KRYPTNET_DOMAIN: ${KRYPTNET_DOMAIN:?Set KRYPTNET_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - tls_data:/data
+      - tls_config:/config
+    networks:
+      backend:
+        ipv4_address: 172.30.81.2
+    depends_on:
+      app:
+        condition: service_healthy
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+networks:
+  backend:
+    ipam:
+      config:
+        - subnet: 172.30.81.0/24
+volumes:
+  learner_data:
+  tls_data:
+  tls_config:

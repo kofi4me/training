@@ -1,0 +1,7 @@
+node_modules/
+artifacts/
+*.tgz
+.assessment-data/
+.env
+deploy/.env
+backups/

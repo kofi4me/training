@@ -1,0 +1,8 @@
+{$KRYPTNET_DOMAIN} {
+  request_body {
+    max_size 16KB
+  }
+  reverse_proxy app:4317 {
+    header_up X-Real-IP {remote_host}
+  }
+}

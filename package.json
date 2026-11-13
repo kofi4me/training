@@ -1,0 +1,17 @@
+{
+  "name": "network-workshop",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/core.test.js test/assessment.test.js test/security.test.js test/production.test.js test/accounts.test.js test/switching.test.js test/operations.test.js test/replay.test.js test/practice-records.test.js test/release-gate.test.js test/record-store.test.js test/ip-teaching.test.js test/course-practice.test.js test/systems.test.js",
+    "review:report": "node review/build-report.js",
+    "review:gate": "node review/release-gate.js --require-release",
+    "test:issuer": "node --test test/server-api.test.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "openid-client": "^6.8.8",
+    "pg": "^8.23.1"
+  }
+}

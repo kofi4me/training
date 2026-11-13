@@ -1,0 +1,9 @@
+.assessment-data
+.env
+deploy/.env
+node_modules
+artifacts
+.git
+*.tgz
+test
+backups

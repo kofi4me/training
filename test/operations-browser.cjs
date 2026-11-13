@@ -1,0 +1,36 @@
+const {chromium}=require(process.argv[2]);const assert=require('node:assert/strict');const fs=require('node:fs/promises');
+(async()=>{const browser=await chromium.launch({channel:'chrome',headless:true});try{
+ const page=await browser.newPage({viewport:{width:1360,height:1000}});page.setDefaultTimeout(15000);
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ const base='http://127.0.0.1:4317/';
+ const choose=async(name,value)=>page.locator('#operations-settings [name="'+name+'"]').selectOption(value);
+ const fill=async(name,value)=>page.locator('#operations-settings [name="'+name+'"]').fill(value);
+ const check=async(name,value)=>page.locator('#operations-settings [name="'+name+'"]').setChecked(value);
+ const run=async(expected)=>{await page.locator('#operation-prepare').click();for(let i=0;i<20&&await page.locator('#operation-next').isEnabled();i++)await page.locator('#operation-next').click();assert.match(await page.locator('#operation-observed').innerText(),expected);};
+ const open=async id=>{await page.goto(base+'fundamentals.html?course='+id);await page.locator('#operations-lab').waitFor();};
+ const advance=async()=>page.locator('#operation-advance').click();
+ await page.goto(base);assert.equal(await page.locator('[aria-labelledby="training-courses"] .course-launch').count(),13);
+ await page.getByRole('link',{name:'Start DHCP Operations',exact:true}).click();await page.locator('#operations-lab').waitFor();
+ await choose('prediction','Lease usable');await run(/Lease usable/);assert.match(await page.locator('#operation-feedback').innerText(),/Prediction matches/);
+ await choose('client','PC-B');await run(/Lease usable/);await choose('client','PC-C');await run(/No lease/);assert.match(await page.locator('#operation-status').innerText(),/exhausted/);
+ await page.locator('#operation-reset').click();await check('remote',true);await check('relay',false);await run(/No lease/);await check('relay',true);await run(/Lease usable/);
+ await page.locator('#operation-prepare').click();await page.locator('#operation-play').click();await page.waitForFunction(()=>document.querySelector('#operation-status').textContent.includes('Step 2'));await page.locator('#operation-play').click();assert.equal(await page.locator('#operation-play').innerText(),'Play');
+ await open('dns');await run(/NOERROR/);await choose('record','192.0.2.20');await run(/NOERROR/);assert.match(await page.locator('#operation-table').innerText(),/192.0.2.10/);
+ await advance();await run(/NOERROR/);assert.match(await page.locator('#operation-table').innerText(),/192.0.2.20/);
+ await check('authority',false);await run(/NOERROR/);await advance();await run(/SERVFAIL/);
+ await check('authority',true);await choose('name','missing.training.test');await run(/NXDOMAIN/);
+ await check('resolver',false);await run(/Timeout/);
+ await open('firewall');await run(/permit/);await check('reverse',true);await run(/deny/);await check('reverse',false);await fill('source','10.0.1.10');await run(/deny/);
+ await open('nat');await run(/Translated outbound/);await fill('client','192.168.10.11');await run(/Translated outbound/);assert.match(await page.locator('#operation-table').innerText(),/40001/);
+ await fill('client','192.168.10.12');await run(/Port pool exhausted/);await choose('direction','return');await fill('publicPort','40001');await run(/Translated return/);
+ await choose('remote','203.0.113.21');await run(/No matching mapping/);
+ await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+ await fs.mkdir('artifacts',{recursive:true});await page.locator('#operations-lab').screenshot({path:'artifacts/nat-course-mobile.png'});
+ await open('monitoring');await check('baseline',true);await run(/Probe run complete/);await check('baseline',false);await choose('scenario','intermittent');await run(/Probe run complete/);assert.match(await page.locator('#operation-table').innerText(),/33.3%/);
+ await choose('scenario','dns');await run(/Name resolution failed/);assert.match(await page.locator('#operation-table').innerText(),/Not measured/);await check('byName',false);await run(/Probe run complete/);
+ for(const id of ['dhcp','dns','firewall','nat','monitoring']){await open(id);assert.equal(await page.locator('.training-nav [aria-current="page"]').count(),1);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,id);}
+ await page.locator('#operations-lab').screenshot({path:'artifacts/monitoring-course-mobile.png'});
+ await page.locator('.training-nav').getByRole('link',{name:'Homepage',exact:true}).click();await page.locator('.planned-courses summary').click();await page.getByText('AI Agent Security and Prompt Injection',{exact:true}).waitFor();
+ await page.goto(base+'security.html?lab=mitm');await page.locator('.training-nav').getByRole('link',{name:'DHCP Operations',exact:true}).waitFor();
+ assert.deepEqual(errors,[]);console.log('Five course UI checks passed: stateful experiments, failure/repair cases, playback, evidence, navigation, remaining roadmap and mobile layout.');
+}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

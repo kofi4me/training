@@ -1,0 +1,25 @@
+const {chromium}=require(process.argv[2]);const assert=require('node:assert/strict');const path=require('node:path');
+(async()=>{const browser=await chromium.launch({channel:'chrome',headless:true});try{
+ const page=await browser.newPage({viewport:{width:1440,height:1100}});page.setDefaultTimeout(30000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('http://127.0.0.1:4317/index.html',{waitUntil:'domcontentloaded'});
+ await page.locator('#lesson-select').selectOption('3');await page.locator('[data-field="routing"]').uncheck();await page.locator('#network-verify').click();assert.match(await page.locator('#network-practical-result').textContent(),/Local-path check passed/);
+ await page.getByRole('spinbutton',{name:'Management VLAN',exact:true}).fill('30');
+ await page.getByRole('textbox',{name:'Management subnet',exact:true}).fill('192.168.10.64/28');await page.getByRole('textbox',{name:'Management subnet',exact:true}).press('Tab');
+ await page.locator('#network-verify').click();assert.match(await page.locator('#network-practical-result').textContent(),/Local-path check passed/);
+ page.once('dialog',d=>d.accept());await page.locator('#network-fresh-start').click();assert.match(await page.locator('#health').textContent(),/VALID/);
+ await page.goto('http://127.0.0.1:4317/security.html?lab=ddos');await page.locator('#load-preset').selectOption('distributed');await page.locator('#load-step').click();
+ await page.locator('#load-preset').selectOption('baseline');await page.locator('#load-step').click();assert.equal(await page.locator('#load-history tr').count(),1);
+ await page.locator('#save-baseline').click();
+ await page.locator('#keep-queued-work').check();await page.locator('#load-preset').selectOption('distributed');await page.locator('#load-step').click();assert.ok(await page.locator('#load-history tr').count()>1);
+ await page.locator('#study-fresh-start').click();assert.equal(await page.locator('#load-history tr').count(),1);assert.match(await page.locator('#load-history').textContent(),/Step forward/);assert.equal(await page.locator('#keep-queued-work').isChecked(),false);
+ await page.locator('#security-study-mode').selectOption('challenge');await page.locator('#challenge-case').selectOption('B');await page.locator('#load-challenge').click();await page.locator('#challenge-probe').click();
+ await page.locator('#challenge-diagnosis').selectOption('upstream');await page.locator('[data-evidence="upstream"]').check();await page.locator('[data-evidence="limiter"]').check();await page.locator('#check-diagnosis').click();assert.match(await page.locator('#diagnosis-feedback').textContent(),/contradicts/);
+ await page.locator('[data-evidence="limiter"]').uncheck();await page.locator('#check-diagnosis').click();assert.match(await page.locator('#diagnosis-feedback').textContent(),/match the incident evidence/);
+ await page.locator('#verify-recovery').click();assert.match(await page.locator('#diagnosis-feedback').textContent(),/new probe/);
+ await page.locator('#challenge-hint').click();assert.match(await page.locator('#challenge-hint-text').textContent(),/Hint 1 of 3/);
+ await page.locator('#reveal-challenge').click();await page.locator('#load-attack').uncheck();await page.locator('#challenge-probe').click();await page.locator('#verify-recovery').click();assert.match(await page.locator('#diagnosis-feedback').textContent(),/Practical check passed/);
+ await page.screenshot({path:path.join(__dirname,'../artifacts/practical-desktop.png'),fullPage:true});await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await page.locator('.security-coursework').screenshot({path:path.join(__dirname,'../artifacts/practical-mobile.png')});
+ await page.goto('http://127.0.0.1:4317/pilot.html');assert.match(await page.locator('#pilot-summary').textContent(),/No real beginner observations/);await page.locator('#pilot-start').click();assert.match(await page.locator('#pilot-timer').textContent(),/obtain consent/);
+ await page.locator('#pilot-participant').fill('TEST-ONLY');await page.locator('#pilot-consent').check();await page.locator('#pilot-start').click();await page.locator('#pilot-notes').fill('Synthetic automated UI check; not a human pilot result.');await page.getByRole('button',{name:'Record task observation'}).click();assert.equal(await page.locator('#pilot-records tr').count(),1);
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);assert.deepEqual(errors,[]);console.log('Readiness browser checks passed: path isolation, network fresh start, independent/recovery trials, evidence contradiction rejection, staged hints, fresh recovery verification, pilot consent gate and mobile layout. Synthetic pilot record is isolated from the user browser.');
+}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

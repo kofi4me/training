@@ -1,0 +1,83 @@
+const { chromium } = require(process.argv[2]);
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const assert = require('node:assert/strict');
+const os = require('node:os');
+const crypto = require('node:crypto');
+(async () => {
+  const data = await fs.mkdtemp(path.join(os.tmpdir(), 'kn-quiz-ui-'));
+  const id = 'c'.repeat(64), raw = 'd'.repeat(64), key = crypto.createHash('sha256').update(raw).digest('hex');
+  await fs.writeFile(path.join(data, `account-${id}.json`), JSON.stringify({ id, name: 'Sample Learner', email: 'sample@example.test', courses: {}, activity: [] }));
+  await fs.writeFile(path.join(data, `login-${key}.json`), JSON.stringify({ accountId: id, expires: Date.now() + 3600000 }));
+  process.env.NETWORK_LAB_DATA_DIR = data;
+  const { createLabServer } = await import('../server.js');
+  const server = createLabServer({ production: false, origin: '', proxy: '' });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const bank = (await import('../assessment-core.js')).bank;
+  const browser = await chromium.launch({ channel: 'chrome', headless: true });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
+    page.setDefaultTimeout(30000); const errors = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.goto(base + '/assessment.html', { waitUntil: 'domcontentloaded' });
+    await page.getByRole('heading', { name: 'Register for the Quiz' }).waitFor();
+    assert.equal(await page.locator('#begin-form').count(), 0);
+    assert.equal(await page.locator('#quiz-form').count(), 0);
+    assert.equal((await page.request.get(base + '/api/assessment')).status(), 401);
+    await page.setViewportSize({ width: 390, height: 844 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    await page.context().addCookies([{ name: 'kn_login', value: raw, url: base, httpOnly: true, sameSite: 'Lax' }]);
+    await page.setViewportSize({ width: 1440, height: 1100 });
+    await page.reload();
+    await page.locator('#learner-name').fill('Sample Learner');
+    assert.equal(await page.locator('#learner-email').inputValue(), 'sample@example.test');
+    assert.equal(await page.locator('#learner-email').getAttribute('readonly'), '');
+    await page.locator('[name="organization"]').fill('Training Department');
+    await page.locator('[name="learnerId"]').fill('LEARNER-001');
+    await page.locator('[name="confirmed"]').check();
+    await page.getByRole('button', { name: 'Confirm details and begin assessment' }).click();
+    await page.locator('.locked-profile').waitFor();
+    assert.equal(await page.locator('#learner-name').count(), 0);
+    assert.equal((await page.request.get(base + '/assessment-core.js')).status(), 404);
+    const tampered = await page.evaluate(async () => (await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Forged Learner', email: 'forged@example.test', confirmed: true }) })).status);
+    assert.equal(tampered, 409);
+    async function fill(correctCount) {
+      const state = await (await page.request.get(base + '/api/assessment')).json();
+      for (let i = 0; i < state.attempt.questions.length; i++) {
+        const q = bank.find(q => q.id === state.attempt.questions[i].id);
+        const value = i < correctCount ? q.answer : q.type === 'number' ? q.answer + 1 : (q.answer + 1) % q.options.length;
+        if (q.type === 'number') await page.locator('[data-answer="' + q.id + '"]').fill(String(value));
+        else await page.locator('[data-answer="' + q.id + '"][value="' + value + '"]').check();
+      }
+    }
+    await page.getByRole('button', { name: 'Submit assessment' }).click();
+    await page.getByRole('status').filter({ hasText: 'Answer every question' }).waitFor();
+    await fill(7); await page.getByRole('button', { name: 'Submit assessment' }).click();
+    await page.getByRole('heading', { name: 'Further Study Recommended' }).waitFor();
+    assert.equal(await page.locator('#earned-certificate').isVisible(), false);
+    await page.getByRole('button', { name: 'Start a new attempt' }).click();
+    await page.getByRole('button', { name: 'Submit assessment' }).waitFor();
+    await fill(8); await page.getByRole('button', { name: 'Submit assessment' }).click();
+    await page.getByRole('heading', { name: 'Assessment Passed' }).waitFor();
+    const response = await page.request.get(base + '/api/certificate');
+    assert.equal(response.status(), 200);
+    const bytes = await response.body(); assert.equal(bytes.subarray(0, 4).toString(), '%PDF');
+    const artifacts = path.join(__dirname, '../artifacts'); await fs.mkdir(artifacts, { recursive: true });
+    await fs.writeFile(path.join(artifacts, 'certificate-server-example.pdf'), bytes);
+    await page.screenshot({ path: path.join(artifacts, 'assessment-desktop.png'), fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    await page.screenshot({ path: path.join(artifacts, 'assessment-mobile.png'), fullPage: true });
+    await page.reload(); await page.locator('.locked-profile').waitFor();
+    assert.match(await page.locator('.locked-profile').textContent(), /Sample Learner/);
+    await page.getByRole('link', { name: 'Verify record and PDF' }).click();
+    await page.locator('#compare-pdf').waitFor();
+    await page.locator('#compare-pdf').setInputFiles({ name: 'issued.pdf', mimeType: 'application/pdf', buffer: bytes });
+    await page.getByText('Match: this PDF is identical to the issuer-held file.', { exact: true }).waitFor();
+    await page.locator('#compare-pdf').setInputFiles({ name: 'modified.pdf', mimeType: 'application/pdf', buffer: Buffer.concat([bytes, Buffer.from('modified')]) });
+    await page.getByText('Mismatch:', { exact: false }).waitFor();
+    assert.deepEqual(errors, []);
+    console.log('Protected assessment browser checks passed: anonymous quiz gate, isolated authenticated fixture, verified email binding, mandatory registration, locked identity, blocked answer bank, 70% fail, 80% pass, issuer PDF, retained profile, original/mutated file verification, mobile layout. Live provider setup remains separate.');
+  } finally { console.log('Closing assessment test browser.');await browser.close();console.log('Assessment test browser closed.');server.closeAllConnections();await new Promise(resolve => server.close(resolve));console.log('Isolated assessment test server closed.'); }
+})().then(()=>process.exit(0),error=>{console.error(error);process.exit(1);});

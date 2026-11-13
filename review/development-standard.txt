@@ -1,0 +1,457 @@
+# KRYPTNET TRAINING LABS
+## Comprehensive Course Review, Laboratory Enhancement, and Development Standards
+
+**Project:** KryptNet Training Labs  
+**Organization:** KryptNet LLC  
+**Platform:** Browser-Based Interactive Networking and Cybersecurity Training  
+**Instruction Type:** Software Engineering, Educational Content Development, Simulation Enhancement, and Quality Assurance
+
+### 1. Project Objective
+
+Conduct a comprehensive technical, instructional, and functional review of all existing courses in KryptNet Training Labs. Improve each course to deliver a realistic, interactive, hands-on technical learning experience comparable in educational depth to professional networking and cybersecurity training laboratories.
+
+The platform must provide more than written tutorials, static diagrams, prerecorded animations, and multiple-choice assessments. Learners must be able to study technical concepts, interact with realistic devices, configure network environments, conduct experiments, investigate failures, troubleshoot problems, and demonstrate practical competence.
+
+**The fundamental objective is to ensure that learners acquire practical technical skills through realistic virtual laboratory experiences.**
+
+All requirements in this document are mandatory for existing courses and must become the development standard for every future course.
+
+---
+
+### 2. Review All Existing Courses
+
+Review, improve, and validate the following 12 courses:
+
+**Networking and Infrastructure**
+
+1. Network Fundamentals
+2. Network Communication
+3. IP Addressing
+4. VLANs
+5. Routing
+6. Switching and MAC Address Learning
+7. DHCP Operations
+8. DNS Operations
+9. Network Firewalls and ACLs
+10. NAT/PAT
+11. Network Monitoring and Troubleshooting
+
+**Security Investigation**
+
+12. Man-in-the-Middle (MiTM) and DoS/DDoS, currently provided as two separate security laboratories.
+
+**Important:** The existing catalogue contains 13 individually named learning modules when MiTM and DoS/DDoS are counted separately. Review every available module individually.
+
+Do not delete existing working functionality, change established course URLs unnecessarily, or disrupt learner accounts, assessments, or progress records.
+
+Before implementing changes, inspect the existing codebase, document current functionality, identify gaps, and establish a prioritized implementation plan.
+
+### 3. Comprehensive Teaching and Tutorial Content
+
+Every course must contain professionally developed instructional material with sufficient technical depth.
+
+Required content includes:
+
+1. Clear definitions of all major concepts and technical terminology.
+2. Explanation of the technology's purpose and practical applications.
+3. Detailed explanations of underlying operating principles and mechanisms.
+4. Relevant protocols, standards, device functions, and configuration requirements.
+5. Technical architecture and realistic implementation examples.
+6. Common configuration errors, operational limitations, and security implications.
+7. Troubleshooting procedures and diagnostic techniques.
+8. Practical applications in enterprise and service-provider environments.
+9. Knowledge-check questions throughout the course.
+10. References to relevant technical standards and authoritative documentation.
+
+Tutorials must progress logically from foundational concepts to intermediate and advanced practical applications.
+
+Avoid superficial explanations, repetitive content, unexplained abbreviations, and generic descriptions.
+
+**Every technical procedure must explain what is happening, why it happens, and how the learner can verify the result.**
+
+### 4. Realistic Network Devices and Laboratory Environments
+
+All networking laboratories must provide realistic representations of industry equipment and configurations.
+
+Depending on the course, supported devices should include:
+
+- Routers and Layer 2/Layer 3 switches.
+- Firewalls and security gateways.
+- Wireless access points and client devices.
+- Windows and Linux workstations.
+- DNS, DHCP, web, and application servers.
+- Network monitoring and security investigation systems.
+- Cloud gateways and virtual network components where appropriate.
+
+Each device must expose relevant configuration and operational information.
+
+**Required device capabilities**
+
+1. Device name, type, model profile, and operational status.
+2. Network interfaces and interface identifiers.
+3. Interface addressing and subnet configuration.
+4. Ethernet connections and applicable cable types.
+5. Link state, speed, duplex, and relevant port properties.
+6. Routing tables, ARP tables, MAC address tables, or other applicable state.
+7. Device-specific configuration options.
+8. Realistic command-line or graphical configuration interfaces.
+9. Event logs and diagnostic outputs.
+10. Configuration saving, restoration, and reset functions.
+
+Devices must respond logically to configuration changes.
+
+For example, disabling an interface must affect connectivity, changing a VLAN assignment must affect traffic delivery, and correcting a routing problem must restore communication when all other requirements are satisfied.
+
+Where vendor-specific commands are supported, document their syntax and limitations. Do not imply that a simplified browser simulator runs a genuine vendor operating system.
+
+### 5. Interactive Network Topology and Connection Management
+
+Implement a reusable topology workspace that allows learners to construct, inspect, and modify laboratory environments.
+
+Learners should be able to:
+
+1. Add supported devices to a workspace.
+2. Connect devices using appropriate network interfaces.
+3. Select supported connection and cable types.
+4. Configure addressing, interfaces, VLANs, and routing.
+5. Inspect the state of individual connections.
+6. Observe communication between connected devices.
+7. Introduce and resolve connection failures.
+8. Save and restore laboratory configurations.
+9. Reset a laboratory to its original state.
+10. Compare working and faulty network configurations.
+
+The system must validate connection compatibility and configuration consistency.
+
+An incorrect configuration must produce an appropriate failure, rather than allowing the learner to complete the experiment regardless of technical correctness.
+
+### 6. Interactive Animations and Technical Visualization
+
+Every course must include technically accurate animations that demonstrate how the technology operates.
+
+Animations must be driven by the current simulated device and network state.
+
+Examples include:
+
+**Routing:** Animate packets traveling between networks, next-hop decisions, routing-table lookups, TTL changes, route failures, and alternate paths.
+
+**Switching:** Demonstrate source MAC learning, unknown-unicast flooding, forwarding-table updates, and frame delivery.
+
+**VLANs:** Show access-port behavior, tagged trunk traffic, VLAN isolation, and configuration mismatches.
+
+**DHCP:** Animate Discover, Offer, Request, and Acknowledge messages, lease allocation, renewal, and address exhaustion.
+
+**DNS:** Visualize resolver queries, cache lookups, authoritative responses, TTL expiration, and resolution failures.
+
+**Firewalls:** Show packet inspection, ordered rule evaluation, permitted traffic, denied traffic, and rule shadowing.
+
+**NAT/PAT:** Demonstrate address and port translation, mapping creation, return traffic, expiration, and exhaustion.
+
+**Monitoring:** Visualize latency, packet loss, jitter, congestion, and changes in network performance.
+
+**Security Investigation:** Demonstrate simulated attack activity, observable indicators, defensive actions, and the resulting changes in security posture.
+
+**Mandatory animation controls**
+
+- Play and pause.
+- Resume.
+- Step forward and backward where supported.
+- Adjustable playback speed.
+- Restart and replay.
+- Packet or event inspection.
+- Timeline of events.
+- Configuration and state inspection.
+- Before-and-after comparison.
+
+Animations must not be decorative or disconnected from actual laboratory behavior.
+
+### 7. Guided Hands-On Laboratory Experiments
+
+Every course must include multiple guided practical experiments.
+
+Each experiment must contain:
+
+**A. Experiment Title and Objective**
+
+Clearly explain the technical skill or concept being demonstrated.
+
+**B. Required Equipment**
+
+List the simulated devices, interfaces, connections, protocols, and software components.
+
+**C. Network Topology and Initial Configuration**
+
+Provide the starting environment, including device addressing, interface settings, and relevant configurations.
+
+**D. Technical Background**
+
+Explain the concepts learners need before beginning.
+
+**E. Step-by-Step Procedures**
+
+Provide detailed instructions for configuring devices, executing experiments, and inspecting results.
+
+**F. Expected Observations**
+
+Explain the expected packet behavior, device responses, logs, or configuration changes.
+
+**G. Troubleshooting Activities**
+
+Introduce realistic problems that require investigation and correction.
+
+**H. Verification**
+
+Require learners to demonstrate that the intended technical outcome has been achieved.
+
+**I. Technical Explanation**
+
+Explain why the observed result occurred.
+
+**J. Experiment Summary**
+
+Summarize the skills learned and their real-world applications.
+
+Guided experiments must require meaningful learner interaction, not simply clicking through a predetermined animation.
+
+### 8. Mandatory Independent Practical Exercise
+
+Every course must include at least one compulsory practical laboratory exercise that learners complete independently after the guided experiments.
+
+The exercise must represent a realistic technical or security problem.
+
+The learner must:
+
+1. Examine the assigned laboratory scenario.
+2. Identify the required technical objectives.
+3. Inspect the existing configurations and operating conditions.
+4. Diagnose faults or security weaknesses.
+5. Implement appropriate configuration changes or corrective actions.
+6. Execute verification tests.
+7. Confirm that the environment operates as intended.
+8. Submit a short explanation of the problem, solution, and verification evidence.
+
+**Mandatory exercise requirements**
+
+- Exercises must not reveal the complete solution before submission.
+- Each learner or attempt should receive controlled variations in configurations, addressing, faults, or topology.
+- The system must validate actual simulated outcomes.
+- Incorrect configurations must produce technically appropriate results.
+- Learners must receive meaningful feedback.
+- Failed exercises must support controlled retries.
+- Attempts, scores, and completion records must be stored.
+
+Learners must not receive course completion credit without successfully completing the mandatory practical exercise.
+
+### 9. Investigation and Troubleshooting Laboratories
+
+Every course must include fault-based investigation activities.
+
+Examples include:
+
+- Incorrect subnet masks.
+- Duplicate IP addresses.
+- Missing default gateways.
+- Disabled interfaces.
+- VLAN mismatches.
+- Incorrect routing entries.
+- DHCP pool exhaustion.
+- DNS resolution failures.
+- Firewall rule conflicts.
+- NAT translation failures.
+- Excessive latency or packet loss.
+- Suspicious authentication or network activity.
+
+The learner must investigate symptoms, inspect relevant evidence, identify the root cause, implement a correction, and verify the outcome.
+
+Troubleshooting must be based on realistic technical behavior rather than arbitrary success or failure messages.
+
+### 10. Assessment, Grading, and Certification
+
+Every course must include both theoretical and practical assessment.
+
+**Recommended grading structure**
+
+| Assessment component | Weight |
+|---|---:|
+| Knowledge assessment | 30% |
+| Mandatory practical exercise | 60% |
+| Explanation of findings | 10% |
+| **Total** | **100%** |
+
+Recommended minimum passing requirements:
+
+- At least 70% overall.
+- At least 70% in the mandatory practical exercise.
+- Completion of all required guided laboratory activities.
+
+The grading system must evaluate technical correctness and demonstrated outcomes.
+
+A learner must not pass solely through multiple-choice questions while failing the practical laboratory.
+
+Course certificates should include the learner's name, course title, completion date, certificate identifier, and verification mechanism.
+
+Existing certification functions must be preserved and extended carefully.
+
+### 11. Unified Laboratory Simulation Engine
+
+Review the current software architecture and determine how the existing laboratories can share a common simulation framework.
+
+The framework should support:
+
+1. Reusable virtual device models.
+2. Network interface and connection management.
+3. Packet and protocol simulation.
+4. Device configuration processing.
+5. Network state management.
+6. Event generation and logging.
+7. Animation synchronization.
+8. Fault injection.
+9. Automated experiment verification.
+10. Assessment and progress tracking.
+
+The same device and packet models should be reusable across Network Fundamentals, Switching, VLANs, Routing, Firewalls, NAT/PAT, and related courses.
+
+Avoid implementing disconnected simulation logic for every course when shared functionality can provide technically consistent behavior.
+
+### 12. Learner Experience and Accessibility
+
+The platform must be usable by learners with different levels of technical experience.
+
+Implement or improve:
+
+- Clear navigation between tutorials and laboratories.
+- Consistent terminology and instructions.
+- Responsive interfaces.
+- Readable configuration panels.
+- Accessible labels and keyboard controls.
+- Visible experiment objectives and progress.
+- Helpful error explanations.
+- Save-and-resume functionality.
+- Reset and recovery options.
+- Clear distinction between guided practice and graded exercises.
+
+Animations should provide equivalent textual descriptions or event logs so that learners are not dependent solely on visual motion.
+
+### 13. Security, Privacy, and Laboratory Isolation
+
+All cybersecurity exercises must operate within controlled, authorized environments.
+
+Browser simulations must not transmit real attack traffic to external systems.
+
+Use fictional credentials, reserved documentation IP addresses, and synthetic logs where appropriate.
+
+Protect learner accounts, assessment records, and progress information.
+
+Ensure that laboratory configuration inputs cannot execute arbitrary operating-system commands unless an appropriately isolated and authorized backend environment is explicitly designed for that purpose.
+
+### 14. Technical Accuracy and Quality Assurance
+
+Before approving a course for release, conduct a structured review covering:
+
+**Instructional accuracy:** Definitions, explanations, terminology, and learning objectives are correct.
+
+**Configuration accuracy:** Supported commands and settings produce the documented results.
+
+**Simulation accuracy:** Protocol behavior follows the documented model and relevant standards.
+
+**Animation accuracy:** Visual events correspond to actual simulated state changes.
+
+**Troubleshooting accuracy:** Faults produce realistic symptoms, and valid corrections restore the expected behavior.
+
+**Assessment accuracy:** Automated grading evaluates the intended technical outcomes.
+
+**User experience:** The course is understandable, responsive, accessible, and free from blocking defects.
+
+**Regression testing:** Improvements do not break existing courses, learner records, or previously functioning laboratories.
+
+Test successful configurations, invalid configurations, boundary conditions, interrupted experiments, resets, and repeated attempts.
+
+### 15. Course Review and Implementation Deliverables
+
+For every existing course, produce:
+
+1. **Course Audit Report:** Existing functionality, technical limitations, instructional gaps, and missing laboratory features.
+2. **Revised Course Content:** Improved tutorials, definitions, explanations, and technical references.
+3. **Enhanced Laboratory Environment:** Realistic devices, configurations, connections, and operating states.
+4. **Animated Demonstrations:** Technically accurate visualizations connected to simulation state.
+5. **Guided Laboratory Experiments:** Detailed practical exercises with procedures and expected results.
+6. **Mandatory Practical Challenge:** An independently completed, automatically verified exercise.
+7. **Assessment and Grading:** Knowledge assessment, practical scoring, feedback, and completion records.
+8. **Quality Assurance Report:** Test cases, results, known limitations, and corrections.
+9. **Course Completion Checklist:** Evidence that all mandatory standards have been satisfied.
+
+Provide a development status for each requirement:
+
+- Implemented and tested.
+- Partially implemented.
+- Not implemented.
+- Blocked, with explanation.
+
+Do not classify a feature as complete merely because its interface exists. Its actual functionality must be tested.
+
+### 16. Mandatory Standard for Future Courses
+
+Apply this same framework to every future KryptNet Training Labs course, including:
+
+**Networking and Infrastructure:** Wireless Networking and Wi-Fi Security; VPNs and Secure Tunneling; Software-Defined Networking; IPv6 Security and Neighbor Discovery.
+
+**Cybersecurity and Investigation:** Phishing and Social Engineering; Password Attacks and Authentication Security; Ransomware and Malware Incident Response; Web Application Security; SOC Fundamentals; Digital Forensics Fundamentals; Zero Trust Network Security; Cloud Security and Identity Management.
+
+**Cloud and Emerging Technologies:** AI-Assisted Cyberattacks and Defense; AI Agent Security and Prompt Injection; Cloud Networking and Microsegmentation; Container and Kubernetes Security; API Security and OAuth Authentication; SASE and ZTNA.
+
+No new course should be marked production-ready until its teaching content, realistic laboratory environment, guided experiments, mandatory practical exercise, assessment, and quality assurance requirements are satisfied.
+
+### 17. Implementation Approach
+
+Follow a controlled development process.
+
+**Phase 1: Audit**
+
+Review the existing codebase and all available courses. Identify gaps against this standard and document dependencies.
+
+**Phase 2: Architecture**
+
+Improve shared simulation components, device models, configuration handling, animation synchronization, and assessment infrastructure.
+
+**Phase 3: Course Enhancement**
+
+Upgrade existing courses individually, beginning with foundational networking modules and progressing to security investigation.
+
+**Phase 4: Practical Assessment**
+
+Implement mandatory independent exercises, automated verification, grading, and progress tracking.
+
+**Phase 5: Validation**
+
+Test each course against realistic scenarios, invalid configurations, expected outputs, and regression requirements.
+
+**Phase 6: Future Development**
+
+Use the approved standard as the required foundation for all subsequent courses.
+
+Maintain working functionality throughout development and document every significant change.
+
+### 18. Final Acceptance Criteria
+
+A course is ready for release only when a learner can:
+
+1. Study comprehensive technical explanations.
+2. Understand the relevant equipment, protocols, and configurations.
+3. Observe accurate animated demonstrations.
+4. Interact with realistic virtual devices and connections.
+5. Configure the laboratory environment.
+6. Execute meaningful technical experiments.
+7. Investigate and correct realistic faults.
+8. Complete an independent practical challenge.
+9. Explain and verify the results.
+10. Pass the required assessments.
+
+**Final Instruction to the Development Team**
+
+KryptNet Training Labs must be developed as a professional, hands-on virtual learning environment.
+
+The platform's success must be measured by the practical technical skills learners demonstrate, not by the number of courses published, pages completed, or animations viewed.
+
+Every course must provide a credible laboratory experience in which learners can configure, experiment, investigate, troubleshoot, and validate real technical concepts through accurate simulations.
+
+**This document establishes the mandatory KryptNet Training Labs Development Standard for all existing and future courses.**

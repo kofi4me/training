@@ -1,0 +1,25 @@
+const {chromium}=require(process.argv[2]);const assert=require('node:assert/strict');const fs=require('node:fs/promises');
+(async()=>{const browser=await chromium.launch({channel:'chrome',headless:true});try{
+ const p=await browser.newPage({viewport:{width:390,height:844}});p.setDefaultTimeout(12000);p.on('dialog',d=>d.accept());
+ const errors=[];p.on('pageerror',e=>errors.push(e.message));await p.goto('http://127.0.0.1:4317/fundamentals.html?course=dhcp');await p.locator('#operation-prepare').waitFor();
+ const operations=p.locator('#operations-lab');
+ const run=async()=>{await p.locator('#operation-prepare').click();for(let i=0;i<20&&await p.locator('#operation-next').isEnabled();i++)await p.locator('#operation-next').click();};
+ await p.locator('#operation-prepare').click();await operations.locator('.replay-events summary').click();await operations.locator('.replay-timeline button').last().click();
+ assert.match(await p.locator('#operation-feedback').innerText(),/inspection does not execute/);assert.equal(await p.locator('#operation-log li').count(),0);
+ await p.locator('#operation-replay').click();await operations.getByRole('combobox',{name:'Playback speed',exact:true}).selectOption('4');await p.locator('#operation-play').click();
+ await p.waitForFunction(()=>document.querySelector('#operation-status').textContent.includes('Step 2'));await p.locator('#operation-play').click();assert.equal(await p.locator('#operation-play').innerText(),'Play');
+ for(let i=0;i<20&&await p.locator('#operation-next').isEnabled();i++)await p.locator('#operation-next').click();
+ const table=await p.locator('#operation-table').innerText(),logs=await p.locator('#operation-log li').count();await operations.locator('[data-replay-previous]').click();
+ assert.equal(await p.locator('#operation-table').innerText(),table);assert.equal(await p.locator('#operation-log li').count(),logs);
+ await p.locator('#practice-baseline').click();await p.locator('#practice-notes').fill('Fixture: checked lease and gateway.');
+ await p.locator('#practice-save').click();assert.match(await p.locator('#practice-status').innerText(),/saved/);
+ const downloadPromise=p.waitForEvent('download');await p.locator('#practice-export').click();const download=await downloadPromise;await fs.mkdir('artifacts',{recursive:true});await download.saveAs('artifacts/review-practice-export.json');const bytes=await fs.readFile('artifacts/review-practice-export.json');const checkpoint=JSON.parse(bytes.toString());assert.equal(checkpoint.state.leases.length,1);
+ await p.locator('#operation-reset').click();await p.locator('#practice-restore').click();assert.match(await p.locator('#practice-status').innerText(),/restored/);
+ assert.equal(await p.locator('#practice-notes').inputValue(),'Fixture: checked lease and gateway.');assert.match(await p.locator('#practice-comparison').innerText(),/PC-A/);
+ await p.locator('#operations-settings [name="gateway"]').selectOption('192.168.20.1');await p.locator('#practice-file').setInputFiles({name:'checkpoint.json',mimeType:'application/json',buffer:bytes});assert.equal(await p.locator('#operations-settings [name="gateway"]').inputValue(),'192.168.10.1');
+ const invalid=structuredClone(checkpoint);invalid.course='dns';const before=await p.locator('#operation-clock').innerText();await p.locator('#practice-file').setInputFiles({name:'bad.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(invalid))});assert.match(await p.locator('#practice-status').innerText(),/Invalid or incompatible/);assert.equal(await p.locator('#operation-clock').innerText(),before);
+ await p.locator('#operations-settings [name="client"]').selectOption('PC-B');await run();assert.match(await p.locator('#practice-comparison').innerText(),/PC-B/);assert.match(await p.locator('#practice-comparison').innerText(),/Not observed/);
+ await p.reload();await p.locator('#practice-restore').click();assert.equal(await p.locator('#practice-notes').inputValue(),'Fixture: checked lease and gateway.');
+ assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await fs.mkdir('artifacts',{recursive:true});await p.locator('#operations-lab').screenshot({path:'artifacts/review-practice-mobile.png'});
+ assert.deepEqual(errors,[]);console.log('Practice checkpoints passed: replay inspection, speed, commit isolation, baseline, save/reload, export/import, cross-course rejection, notes and mobile layout.');
+}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});
